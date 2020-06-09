@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block title %}index{% endblock %}
+
+{% block content %}
+<h1>home automation</h1>
+<ul>
+	{% for room in rooms %}
+	<li>{{ room[1] }} ({{ room[0] }})</li>
+	{% endfor %}
+</ul>
+{% endblock %}

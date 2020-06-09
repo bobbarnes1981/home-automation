@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}testing{% endblock %}
+
+{% block content %}
+<h1>george's room</h1>
+
+<ul>
+	{% for light in lights %}
+	<li>{{ light['name'] }} ({{ light['state']['on'] }})</li>
+	{% endfor %}
+	<li>{{ temperature }}</li>
+</ul>
+{% endblock %}
