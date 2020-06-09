@@ -1,27 +1,21 @@
 from flask import Flask
-from flask import render_template, request
+from flask import jsonify, render_template, request
 
+from datetime import datetime
 import requests
 import sqlite3
 import time
 
 app = Flask(__name__)
 
-# TODO: 
-#       configure sensors
-#       assign sensors to rooms
-
-@app.route('/')
-def index():
-    rooms = store.get_rooms()
-    return render_template('index.html', rooms = rooms)
-
 @app.route('/hue/config', methods = ['GET', 'POST'])
 def hue_config():
     if request.method == 'POST':
+        store.set_config('hue_address', request.form['hue_address'])
         store.set_config('hue_username', request.form['hue_username'])
+    hue_address = store.get_config('hue_address')
     hue_username = store.get_config('hue_username')
-    return render_template('hue/config.html', hue_username = hue_username)
+    return render_template('hue/config.html', hue_address = hue_address, hue_username = hue_username)
 
 @app.route('/rooms/add', methods = ['GET', 'POST'])
 def rooms_add():
@@ -35,8 +29,8 @@ def rooms_config():
     if request.method == 'POST':
         rooms = store.get_rooms()
         for room in rooms:
-            hue_group_id = request.form['room_{0}'.format(room[0])]
-            store.update_room(room[0], room[1], hue_group_id)
+            hue_group_id = request.form['room_{0}'.format(room['id'])]
+            store.update_room(room['id'], room['name'], hue_group_id)
     rooms = store.get_rooms()
     hue_groups = hue.get_groups()
     return render_template('rooms/config.html', rooms = rooms, hue_groups = hue_groups)
@@ -45,12 +39,19 @@ def rooms_config():
 def rooms_one(room_id):
     room = store.get_room(room_id)
     hue_group = hue.get_group(room['hue_group_id'])
-    lights = []
+    lights = {}
     for hue_light in hue_group['lights']:
         light = hue.get_light(hue_light)
-        lights.append(light)
+        lights[hue_light] = light
     temperature = store.get_temperature(room_id)
+    if temperature:
+        temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
+
+@app.route('/rooms')
+def rooms_all():
+    rooms = store.get_rooms()
+    return render_template('rooms/all.html', rooms = rooms)
 
 @app.route('/api/rooms/<int:room_id>/temperature', methods = [ 'POST' ])
 def api_rooms_temperature(room_id):
@@ -58,9 +59,17 @@ def api_rooms_temperature(room_id):
     if request.method == 'POST':
         data = request.get_json()
         store.set_temperature(room_id, data['temperature_c'])
-        return 'success'
+        return jsonify('success')
 
-@app.route('/dashboard')
+@app.route('/api/lights/<int:light_id>', methods = [ 'PUT' ])
+def api_lights(light_id):
+    # TODO: validate light id?
+    if request.method == 'PUT':
+        data = request.get_json()
+        hue.set_light(light_id, data['state'])
+        return jsonify('success')
+
+@app.route('/')
 def dashboard():
     rooms = store.get_rooms()
     room_temps = {}
@@ -247,11 +256,18 @@ class Hue(object):
 
     DEVICE_TYPE = 'home-automation'
 
-    def __init__(self, address):
-        self.address = address
+    def __init__(self):
+        pass
+
+    def url(self, path):
+        return 'http://{0}/api/{1}/{2}'.format(store.get_config('hue_address'), store.get_config('hue_username'), path)
 
     def request_get(self, path):
-        r = requests.get('http://{0}/api/{1}/{2}'.format(self.address, store.get_config('hue_username'), path))
+        r = requests.get(self.url(path))
+        return r.json()
+
+    def request_put(self, path, json):
+        r = requests.put(self.url(path), json = json)
         return r.json()
 
     def register(self, device_type):
@@ -275,6 +291,9 @@ class Hue(object):
     def get_light(self, id):
         return self.request_get('lights/{0}'.format(id))
 
+    def set_light(self, id, state):
+        return self.request_put('lights/{0}/state'.format(id), {"on": state})
+
 store = DataStore()
-hue = Hue('192.168.0.175')
+hue = Hue()
 
