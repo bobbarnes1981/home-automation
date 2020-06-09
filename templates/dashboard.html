@@ -5,38 +5,64 @@
 <h1>dashboard</h1>
 
 
-<canvas id="myChart" width="400" height="400"></canvas>
+<canvas id="myChart" width="" height=""></canvas>
 
 <script>
+var colours = [
+	'red',
+	'orange',
+	'yellow',
+	'green',
+	'blue',
+	'indigo',
+	'violet'
+];
+var colour_choice = 0;
+function get_colour(){
+	return colours[colour_choice++];
+}
 var ctx = document.getElementById('myChart').getContext('2d');
 var myChart = new Chart(ctx, {
     type: 'line',
     data: {
-        labels: [
-		{% for room in rooms %}
-			{% if room_temps[room['id']] %}
-			{% for room_temp in room_temps[room['id']] %}
-		'{{ room_temp['timestamp'] }}',
-			{% endfor %}
-			{% endif %}
-		{% endfor %}
-	],
         datasets: [
-		
 			{% for room in rooms %}
 				{% if room_temps[room['id']] %}
-		{
-			label: '{{ room['name'] }}',
+		    {
+			    label: '{{ room['name'] }}',
             	data: [
 				{% for room_temp in room_temps[room['id']] %}
-			{{ room_temp['temperature'] }},
+			        {
+                        t: {{ room_temp['timestamp']*1000 }},
+                        y: {{ room_temp['temperature'] }}
+                    },
 				{% endfor %}
-		],
+		        ],
+			    fill: false,
+			    borderColor: get_colour(),
         	},
 				{% endif %}
 			{% endfor %}
-	]
+	    ]
     },
+    options: {
+        scales: {
+            xAxes: [{
+                type: 'time',
+                distribution: 'series',
+                time: {
+                    unit: 'second',
+                    displayFormats: {
+                        second: 'HH:mm:ss',
+                    }
+                },
+                ticks: {
+                    source: 'auto',
+                    autoSkip: true,
+                },
+            }]
+        }
+    }
 });
 </script>
 
