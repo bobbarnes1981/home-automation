@@ -17,20 +17,49 @@ def index():
     rooms = store.get_rooms()
     return render_template('index.html', rooms = rooms)
 
-@app.route('/hue')
-def hue():
-    return 'hue {0}'.format(hue.groups())
+@app.route('/hue/config', methods = ['GET', 'POST'])
+def hue_config():
+    if request.method == 'POST':
+        store.set_config('hue_username', request.form['hue_username'])
+    hue_username = store.get_config('hue_username')
+    return render_template('hue/config.html', hue_username = hue_username)
 
-@app.route('/room/<int:room_id>')
-def rooms(room_id):
-    #george_lights = [hue.light(16)]
-    return render_template('room.html', lights = lights, temperature = temperature)
+@app.route('/rooms/add', methods = ['GET', 'POST'])
+def rooms_add():
+    if request.method == 'POST':
+        store.add_room(request.form['room_name'])
+    rooms = store.get_rooms()
+    return render_template('rooms/add.html', rooms = rooms)
 
-@app.route('/api/room/<int:room_id>/temperature', methods = [ 'POST' ])
-def api_room_temperature(room_id):
+@app.route('/rooms/config', methods = ['GET', 'POST'])
+def rooms_config():
+    if request.method == 'POST':
+        rooms = store.get_rooms()
+        for room in rooms:
+            hue_group_id = request.form['room_{0}'.format(room[0])]
+            store.update_room(room[0], room[1], hue_group_id)
+    rooms = store.get_rooms()
+    hue_groups = hue.get_groups()
+    return render_template('rooms/config.html', rooms = rooms, hue_groups = hue_groups)
+
+@app.route('/rooms/<int:room_id>')
+def rooms_one(room_id):
+    room = store.get_room(room_id)
+    hue_group = hue.get_group(room[2])
+    lights = []
+    for hue_light in hue_group['lights']:
+        light = hue.get_light(hue_light)
+        lights.append(light)
+    temperature = store.get_temperature(room_id)
+    return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
+
+@app.route('/api/rooms/<int:room_id>/temperature', methods = [ 'POST' ])
+def api_rooms_temperature(room_id):
+    # TODO: validate room id
     if request.method == 'POST':
         data = request.get_json()
-        return '{0}'.format(data['temperature_c'])
+        store.set_temperature(room_id, data['temperature_c'])
+        return 'success'
 
 class DataStore(object):
 
@@ -50,7 +79,8 @@ class DataStore(object):
         cur.execute('''
             CREATE TABLE IF NOT EXISTS rooms (
                 id INTEGER PRIMARY KEY,
-                name TEXT UNIQUE
+                name TEXT UNIQUE,
+                hue_group_id INTEGER
             );
         ''')
 
@@ -58,6 +88,7 @@ class DataStore(object):
             CREATE TABLE IF NOT EXISTS temperatures (
                 timestamp INTEGER NOT NULL,
                 room_id INTEGER NOT NULL,
+                temperature REAL NOT NULL,
                 FOREIGN KEY (room_id) REFERENCES rooms (id) ON DELETE CASCADE
             );
         ''')
@@ -107,9 +138,22 @@ class DataStore(object):
         cur = cxn.cursor()
 
         cur.execute('''
-            SELECT id, name FROM rooms;
+            SELECT id, name, hue_group_id FROM rooms;
         ''')
-        val = cur.fetchmany()
+        val = cur.fetchmany(999)
+        
+        cxn.close()
+        
+        return val
+
+    def get_room(self, id):
+        cxn = sqlite3.connect(self.database)
+        cur = cxn.cursor()
+
+        cur.execute('''
+            SELECT id, name, hue_group_id FROM rooms WHERE id = :id;
+        ''', {"id": id})
+        val = cur.fetchone()
         
         cxn.close()
         
@@ -121,21 +165,58 @@ class DataStore(object):
 
         cur.execute('''
             INSERT INTO rooms (name) VALUES (:name);
-        ''', {'name':name})
+        ''', {'name': name})
 
         cxn.commit()
         cxn.close()
+
+    def update_room(self, id, name, hue_group_id):
+        cxn = sqlite3.connect(self.database)
+        cur = cxn.cursor()
+
+        cur.execute('''
+            UPDATE rooms SET name = :name, hue_group_id = :hue_group_id WHERE id = :id;
+        ''', {'name': name, 'hue_group_id': hue_group_id, 'id': id})
+
+        cxn.commit()
+        cxn.close()
+
+    def set_temperature(self, room_id, temperature):
+        cxn = sqlite3.connect(self.database)
+        cur = cxn.cursor()
+
+        cur.execute('''
+            INSERT INTO temperatures (timestamp, room_id, temperature;
+        ''')
+        val = cur.fetchmany(999)
+        
+        cxn.close()
+        
+        return val
+
+    def get_temperature(self, room_id):
+        cxn = sqlite3.connect(self.database)
+        cur = cxn.cursor()
+
+        cur.execute('''
+            SELECT temperature FROM temperatures WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 1;
+        ''', {"room_id": room_id})
+
+        val = cur.fetchone()
+
+        if val:
+            return val[0]
+        return None
 
 class Hue(object):
 
     DEVICE_TYPE = 'home-automation'
 
-    def __init__(self, address, username):
+    def __init__(self, address):
         self.address = address
-        self.username = username
 
     def request_get(self, path):
-        r = requests.get('http://{0}/api/{1}/{2}'.format(self.address, self.username, path))
+        r = requests.get('http://{0}/api/{1}/{2}'.format(self.address, store.get_config('hue_username'), path))
         return r.json()
 
     def register(self, device_type):
@@ -147,18 +228,18 @@ class Hue(object):
         # [{"success":{"username":user_name}}]
         pass
 
-    def groups(self):
+    def get_groups(self):
         return self.request_get('groups')
 
-    def group(self, id):
+    def get_group(self, id):
         return self.request_get('groups/{0}'.format(id))
 
-    def lights(self):
+    def get_lights(self):
         return self.request_get('lights')
 
-    def light(self, id):
+    def get_light(self, id):
         return self.request_get('lights/{0}'.format(id))
 
 store = DataStore()
-hue = Hue('192.168.0.175', store.get_config('hue_username'))
+hue = Hue('192.168.0.175')
 

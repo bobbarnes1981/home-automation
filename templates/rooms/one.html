@@ -2,12 +2,12 @@
 {% block title %}testing{% endblock %}
 
 {% block content %}
-<h1>george's room</h1>
+<h1>{{ room[1] }}</h1>
 
 <ul>
 	{% for light in lights %}
 	<li>{{ light['name'] }} ({{ light['state']['on'] }})</li>
 	{% endfor %}
-	<li>{{ temperature }}</li>
+	<li>{{ temperature }}c</li>
 </ul>
 {% endblock %}

@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block title %}rooms config{% endblock %}
+
+{% block content %}
+<h1>rooms config</h1>
+
+<form action="" method="POST">
+	{% for room in rooms %}
+
+	<label for="room_{{ room[0] }}">{{ room[1] }}</label>
+	[{{ room[2] }}]
+	<select id="room_{{ room[0] }}" name="room_{{ room[0] }}">
+	
+		{% for key in hue_groups %}
+
+		<option value="{{ key }}" {% if key|int == room[2] %}selected="selected"{% endif %}>{{ hue_groups[key]['name'] }}</option>
+
+		{% endfor %}
+
+	</select>
+
+	</br>
+
+	{% endfor %}
+
+	<input type="submit" value="Save" />
+</form>
+
+{% endblock %}
