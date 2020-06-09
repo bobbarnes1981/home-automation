@@ -2,12 +2,12 @@
 {% block title %}testing{% endblock %}
 
 {% block content %}
-<h1>{{ room[1] }}</h1>
+<h1>{{ room['name'] }}</h1>
 
 <ul>
 	{% for light in lights %}
-	<li>{{ light['name'] }} ({{ light['state']['on'] }})</li>
+	<li>{{ light['name'] }} ({{ light['state']['on'] }})<div class="btn btn-primary">switch</div></li>
 	{% endfor %}
-	<li>{{ temperature }}c</li>
+	<li>{{ temperature['temperature'] }}c (@{{ temperature['timestamp'] }})</li>
 </ul>
 {% endblock %}

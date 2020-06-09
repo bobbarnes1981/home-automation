@@ -3,14 +3,13 @@ from flask import render_template, request
 
 import requests
 import sqlite3
+import time
 
 app = Flask(__name__)
 
-# TODO: configure hue
-#       assign lights to rooms
+# TODO: 
 #       configure sensors
 #       assign sensors to rooms
-#       manage rooms
 
 @app.route('/')
 def index():
@@ -45,7 +44,7 @@ def rooms_config():
 @app.route('/rooms/<int:room_id>')
 def rooms_one(room_id):
     room = store.get_room(room_id)
-    hue_group = hue.get_group(room[2])
+    hue_group = hue.get_group(room['hue_group_id'])
     lights = []
     for hue_light in hue_group['lights']:
         light = hue.get_light(hue_light)
@@ -60,6 +59,21 @@ def api_rooms_temperature(room_id):
         data = request.get_json()
         store.set_temperature(room_id, data['temperature_c'])
         return 'success'
+
+@app.route('/dashboard')
+def dashboard():
+    rooms = store.get_rooms()
+    room_temps = {}
+    for room in rooms:
+        temps = store.get_temperatures(room['id'], time.time() - (60*60*24))
+        room_temps[room['id']] = temps
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps)
+
+def dictionary_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
 
 class DataStore(object):
 
@@ -98,6 +112,7 @@ class DataStore(object):
 
     def get_config(self, key):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
@@ -108,7 +123,7 @@ class DataStore(object):
         cxn.close()
         
         if val:
-            return val[0]
+            return val['config_val']
         return None
 
     def set_config(self, key, value):
@@ -135,6 +150,7 @@ class DataStore(object):
 
     def get_rooms(self):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
@@ -148,6 +164,7 @@ class DataStore(object):
 
     def get_room(self, id):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
@@ -186,26 +203,44 @@ class DataStore(object):
         cur = cxn.cursor()
 
         cur.execute('''
-            INSERT INTO temperatures (timestamp, room_id, temperature;
-        ''')
-        val = cur.fetchmany(999)
-        
+            INSERT INTO temperatures (
+                timestamp, room_id, temperature
+            ) VALUES (
+                :timestamp, :room_id, :temperature
+            );
+        ''', {"timestamp": time.time(), "room_id": room_id, "temperature": temperature})
+
+        cxn.commit()
         cxn.close()
-        
-        return val
 
     def get_temperature(self, room_id):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
-            SELECT temperature FROM temperatures WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 1;
+            SELECT temperature, timestamp FROM temperatures WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 1;
         ''', {"room_id": room_id})
 
         val = cur.fetchone()
 
         if val:
-            return val[0]
+            return val
+        return None
+
+    def get_temperatures(self, room_id, from_timestamp):
+        cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
+        cur = cxn.cursor()
+
+        cur.execute('''
+            SELECT temperature, timestamp FROM temperatures WHERE room_id = :room_id AND timestamp > :timestamp ORDER BY timestamp;
+        ''', {"room_id": room_id, "timestamp": from_timestamp})
+
+        val = cur.fetchmany(1440)
+
+        if val:
+            return val
         return None
 
 class Hue(object):
