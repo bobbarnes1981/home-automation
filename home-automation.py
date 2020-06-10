@@ -80,11 +80,12 @@ def dashboard():
     for room in rooms:
         temps = store.get_temperatures(room['id'], time.time() - (60*60*24))
         room_temps[room['id']] = temps
-        hue_group = hue.get_group(room['hue_group_id'])
-        room_lights[room['id']] = {}
-        for hue_light in hue_group['lights']:
-            light = hue.get_light(hue_light)
-            room_lights[room['id']][hue_light] = light
+        if room['hue_group_id']:
+            hue_group = hue.get_group(room['hue_group_id'])
+            room_lights[room['id']] = {}
+            for hue_light in hue_group['lights']:
+                light = hue.get_light(hue_light)
+                room_lights[room['id']][hue_light] = light
     root_data = psutil.disk_usage('/')
     return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free)
 
