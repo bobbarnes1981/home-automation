@@ -25,7 +25,7 @@
             </div>
             <ul class="list-group list-group-flush">
                 {% for p in weather['SiteRep']['Wx']['Param'] %}
-	            <li class="list-group-item">
+	            <li class="list-group-item py-1">
                     {{ p['$'] }}
                     {% set period = weather['SiteRep']['DV']['Location']['Period']|first %}
                     {% set d = period['Rep']|first %}
