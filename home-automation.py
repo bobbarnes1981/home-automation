@@ -2,6 +2,7 @@ from flask import Flask
 from flask import jsonify, render_template, request
 
 from datetime import datetime
+import os
 import requests
 import sqlite3
 import time
@@ -71,12 +72,19 @@ def api_lights(light_id):
 
 @app.route('/')
 def dashboard():
+    db_file_size = os.stat(DataStore.database).st_size
     rooms = store.get_rooms()
     room_temps = {}
+    room_lights = {}
     for room in rooms:
         temps = store.get_temperatures(room['id'], time.time() - (60*60*24))
         room_temps[room['id']] = temps
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps)
+        hue_group = hue.get_group(room['hue_group_id'])
+        room_lights[room['id']] = {}
+        for hue_light in hue_group['lights']:
+            light = hue.get_light(hue_light)
+            room_lights[room['id']][hue_light] = light
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_size = db_file_size)
 
 def dictionary_factory(cursor, row):
     d = {}
