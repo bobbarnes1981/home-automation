@@ -19,6 +19,16 @@ def hue_config():
     hue_username = store.get_config('hue_username')
     return render_template('hue/config.html', hue_address = hue_address, hue_username = hue_username)
 
+@app.route('/metoffice/config', methods = ['GET', 'POST'])
+def metoffice_config():
+    if request.method == 'POST':
+        store.set_config('metoffice_key', request.form['metoffice_key'])
+        store.set_config('metoffice_location', request.form['metoffice_location'])
+    metoffice_key = store.get_config('metoffice_key')
+    metoffice_location = store.get_config('metoffice_location')
+    metoffice_locations = metoffice.get_observation_locations()
+    return render_template('metoffice/config.html', metoffice_key = metoffice_key, metoffice_location = metoffice_location, metoffice_locations = metoffice_locations)
+
 @app.route('/rooms/add', methods = ['GET', 'POST'])
 def rooms_add():
     if request.method == 'POST':
@@ -73,7 +83,6 @@ def api_lights(light_id):
 
 @app.route('/')
 def dashboard():
-    db_file_size = os.stat(DataStore.database).st_size
     rooms = store.get_rooms()
     room_temps = {}
     room_lights = {}
@@ -86,8 +95,10 @@ def dashboard():
             for hue_light in hue_group['lights']:
                 light = hue.get_light(hue_light)
                 room_lights[room['id']][hue_light] = light
+    db_file_size = os.stat(DataStore.database).st_size
     root_data = psutil.disk_usage('/')
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free)
+    weather = metoffice.get_observation(store.get_config('metoffice_location'))
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, weather = weather)
 
 def dictionary_factory(cursor, row):
     d = {}
@@ -305,6 +316,28 @@ class Hue(object):
     def set_light(self, id, state):
         return self.request_put('lights/{0}/state'.format(id), {"on": state})
 
+class MetOffice(object):
+
+    base_url = 'datapoint.metoffice.gov.uk/public/data'
+    datatype = 'json'
+
+    def __init__(self):
+        pass
+
+    def url(self, path):
+        return 'http://{0}/{1}?res=hourly&key={2}'.format(self.base_url, path, store.get_config('metoffice_key'))
+
+    def request_get(self, path):
+        r = requests.get(self.url(path))
+        return r.json()
+
+    def get_observation_locations(self):
+        return self.request_get('/val/wxobs/all/{0}/sitelist'.format(self.datatype))
+
+    def get_observation(self, id):
+        return self.request_get('/val/wxobs/all/{0}/{1}'.format(self.datatype, id))
+
 store = DataStore()
 hue = Hue()
+metoffice = MetOffice()
 

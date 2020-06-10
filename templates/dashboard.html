@@ -16,6 +16,25 @@
         </div>
     </div>
     <div class="col-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                Weather
+            </div>
+            <div class="card-body">
+                MetOffice {{ weather['SiteRep']['DV']['Location']['name'] }}
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for p in weather['SiteRep']['Wx']['Param'] %}
+	            <li class="list-group-item">
+                    {{ p['$'] }}
+                    {% set period = weather['SiteRep']['DV']['Location']['Period']|first %}
+                    {% set d = period['Rep']|first %}
+                    {{ d[p['name']] }}
+                    {{ p['units'] }}
+                </li>
+	            {% endfor %}
+            </ul>
+        </div>
     </div>
 </div>
 <div class="row">
