@@ -91,7 +91,7 @@
             </div>
             <div class="card-body">
                 {{ db_file_name }} <br/>
-                {{ db_file_size }} bytes<br/>
+                {{ db_file_size / 1024 }} KB<br/>
             </div>
         </div>
     </div>
@@ -101,9 +101,9 @@
                 Disk
             </div>
             <div class="card-body">
-               {{ disk_total }} bytes total<br/>
-               {{ disk_free }} bytes free<br/>
-               {{ disk_used }} bytes used<br/>
+               {{ disk_total / 1024 / 1024 / 1024 }} GB total<br/>
+               {{ disk_free / 1024 / 1024 / 1024 }} GB free<br/>
+               {{ disk_used / 1024 / 1024 / 1024 }} GB used<br/>
             </div>
         </div>
     </div>
