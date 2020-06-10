@@ -45,6 +45,7 @@ def rooms_config():
             store.update_room(room['id'], room['name'], hue_group_id)
     rooms = store.get_rooms()
     hue_groups = hue.get_groups()
+    hue_groups[0] = {'name': ''}
     return render_template('rooms/config.html', rooms = rooms, hue_groups = hue_groups)
 
 @app.route('/rooms/<int:room_id>')
