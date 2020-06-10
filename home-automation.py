@@ -52,9 +52,10 @@ def rooms_one(room_id):
     room = store.get_room(room_id)
     hue_group = hue.get_group(room['hue_group_id'])
     lights = {}
-    for hue_light in hue_group['lights']:
-        light = hue.get_light(hue_light)
-        lights[hue_light] = light
+    if room['hue_group_id']:
+        for hue_light in hue_group['lights']:
+            light = hue.get_light(hue_light)
+            lights[hue_light] = light
     temperature = store.get_temperature(room_id)
     if temperature:
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
