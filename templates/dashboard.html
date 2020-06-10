@@ -25,13 +25,15 @@
             </div>
             <ul class="list-group list-group-flush">
                 {% for p in weather['SiteRep']['Wx']['Param'] %}
-	            <li class="list-group-item py-1">
-                    {{ p['$'] }}
                     {% set period = weather['SiteRep']['DV']['Location']['Period']|first %}
                     {% set d = period['Rep']|first %}
-                    {{ d[p['name']] }}
-                    {{ p['units'] }}
+                    {% if d[p['name']] %}
+	            <li class="list-group-item py-1">
+                        {{ p['$'] }}
+                        {{ d[p['name']] }}
+                        {{ p['units'] }}
                 </li>
+                    {% endif %}
 	            {% endfor %}
             </ul>
         </div>
