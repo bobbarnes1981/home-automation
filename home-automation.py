@@ -1,28 +1,22 @@
 from flask import Flask
-from flask import render_template, request
+from flask import jsonify, render_template, request
 
+from datetime import datetime
+import os
 import requests
 import sqlite3
+import time
 
 app = Flask(__name__)
-
-# TODO: configure hue
-#       assign lights to rooms
-#       configure sensors
-#       assign sensors to rooms
-#       manage rooms
-
-@app.route('/')
-def index():
-    rooms = store.get_rooms()
-    return render_template('index.html', rooms = rooms)
 
 @app.route('/hue/config', methods = ['GET', 'POST'])
 def hue_config():
     if request.method == 'POST':
+        store.set_config('hue_address', request.form['hue_address'])
         store.set_config('hue_username', request.form['hue_username'])
+    hue_address = store.get_config('hue_address')
     hue_username = store.get_config('hue_username')
-    return render_template('hue/config.html', hue_username = hue_username)
+    return render_template('hue/config.html', hue_address = hue_address, hue_username = hue_username)
 
 @app.route('/rooms/add', methods = ['GET', 'POST'])
 def rooms_add():
@@ -36,8 +30,8 @@ def rooms_config():
     if request.method == 'POST':
         rooms = store.get_rooms()
         for room in rooms:
-            hue_group_id = request.form['room_{0}'.format(room[0])]
-            store.update_room(room[0], room[1], hue_group_id)
+            hue_group_id = request.form['room_{0}'.format(room['id'])]
+            store.update_room(room['id'], room['name'], hue_group_id)
     rooms = store.get_rooms()
     hue_groups = hue.get_groups()
     return render_template('rooms/config.html', rooms = rooms, hue_groups = hue_groups)
@@ -45,13 +39,20 @@ def rooms_config():
 @app.route('/rooms/<int:room_id>')
 def rooms_one(room_id):
     room = store.get_room(room_id)
-    hue_group = hue.get_group(room[2])
-    lights = []
+    hue_group = hue.get_group(room['hue_group_id'])
+    lights = {}
     for hue_light in hue_group['lights']:
         light = hue.get_light(hue_light)
-        lights.append(light)
+        lights[hue_light] = light
     temperature = store.get_temperature(room_id)
+    if temperature:
+        temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
+
+@app.route('/rooms')
+def rooms_all():
+    rooms = store.get_rooms()
+    return render_template('rooms/all.html', rooms = rooms)
 
 @app.route('/api/rooms/<int:room_id>/temperature', methods = [ 'POST' ])
 def api_rooms_temperature(room_id):
@@ -59,7 +60,37 @@ def api_rooms_temperature(room_id):
     if request.method == 'POST':
         data = request.get_json()
         store.set_temperature(room_id, data['temperature_c'])
-        return 'success'
+        return jsonify('success')
+
+@app.route('/api/lights/<int:light_id>', methods = [ 'PUT' ])
+def api_lights(light_id):
+    # TODO: validate light id?
+    if request.method == 'PUT':
+        data = request.get_json()
+        hue.set_light(light_id, data['state'])
+        return jsonify('success')
+
+@app.route('/')
+def dashboard():
+    db_file_size = os.stat(DataStore.database).st_size
+    rooms = store.get_rooms()
+    room_temps = {}
+    room_lights = {}
+    for room in rooms:
+        temps = store.get_temperatures(room['id'], time.time() - (60*60*24))
+        room_temps[room['id']] = temps
+        hue_group = hue.get_group(room['hue_group_id'])
+        room_lights[room['id']] = {}
+        for hue_light in hue_group['lights']:
+            light = hue.get_light(hue_light)
+            room_lights[room['id']][hue_light] = light
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_size = db_file_size)
+
+def dictionary_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
 
 class DataStore(object):
 
@@ -98,6 +129,7 @@ class DataStore(object):
 
     def get_config(self, key):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
@@ -108,7 +140,7 @@ class DataStore(object):
         cxn.close()
         
         if val:
-            return val[0]
+            return val['config_val']
         return None
 
     def set_config(self, key, value):
@@ -135,6 +167,7 @@ class DataStore(object):
 
     def get_rooms(self):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
@@ -148,6 +181,7 @@ class DataStore(object):
 
     def get_room(self, id):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
@@ -186,37 +220,62 @@ class DataStore(object):
         cur = cxn.cursor()
 
         cur.execute('''
-            INSERT INTO temperatures (timestamp, room_id, temperature;
-        ''')
-        val = cur.fetchmany(999)
-        
+            INSERT INTO temperatures (
+                timestamp, room_id, temperature
+            ) VALUES (
+                :timestamp, :room_id, :temperature
+            );
+        ''', {"timestamp": time.time(), "room_id": room_id, "temperature": temperature})
+
+        cxn.commit()
         cxn.close()
-        
-        return val
 
     def get_temperature(self, room_id):
         cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
         cur = cxn.cursor()
 
         cur.execute('''
-            SELECT temperature FROM temperatures WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 1;
+            SELECT temperature, timestamp FROM temperatures WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 1;
         ''', {"room_id": room_id})
 
         val = cur.fetchone()
 
         if val:
-            return val[0]
+            return val
+        return None
+
+    def get_temperatures(self, room_id, from_timestamp):
+        cxn = sqlite3.connect(self.database)
+        cxn.row_factory = dictionary_factory
+        cur = cxn.cursor()
+
+        cur.execute('''
+            SELECT temperature, timestamp FROM temperatures WHERE room_id = :room_id AND timestamp > :timestamp ORDER BY timestamp;
+        ''', {"room_id": room_id, "timestamp": from_timestamp})
+
+        val = cur.fetchmany(1440)
+
+        if val:
+            return val
         return None
 
 class Hue(object):
 
     DEVICE_TYPE = 'home-automation'
 
-    def __init__(self, address):
-        self.address = address
+    def __init__(self):
+        pass
+
+    def url(self, path):
+        return 'http://{0}/api/{1}/{2}'.format(store.get_config('hue_address'), store.get_config('hue_username'), path)
 
     def request_get(self, path):
-        r = requests.get('http://{0}/api/{1}/{2}'.format(self.address, store.get_config('hue_username'), path))
+        r = requests.get(self.url(path))
+        return r.json()
+
+    def request_put(self, path, json):
+        r = requests.put(self.url(path), json = json)
         return r.json()
 
     def register(self, device_type):
@@ -240,6 +299,9 @@ class Hue(object):
     def get_light(self, id):
         return self.request_get('lights/{0}'.format(id))
 
+    def set_light(self, id, state):
+        return self.request_put('lights/{0}/state'.format(id), {"on": state})
+
 store = DataStore()
-hue = Hue('192.168.0.175')
+hue = Hue()
 

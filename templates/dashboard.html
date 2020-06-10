@@ -1,0 +1,113 @@
+{% extends "layout.html" %}
+{% block title %}dashboard{% endblock %}
+
+{% block content %}
+<h1>dashboard</h1>
+
+<div class="row">
+    <div class="col-8">
+        <div class="card mb-3">
+            <div class="card-header">
+                Temperature
+            </div>
+            <div class="card-body">
+                <canvas id="myChart" width="" height=""></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+    </div>
+</div>
+<div class="row">
+    {% for room in rooms %}
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">{{ room['name'] }}</div>
+            <div class="card-body">
+                {% if room_temps[room['id']] %}
+                {% set last_temp = room_temps[room['id']]|last %}
+                <p class="card-text">{{ last_temp['temperature'] }}c</p>
+                {% else %}
+                <p class="card-text">No temperature data</p>
+                {% endif %}
+            </div>
+            <ul class="list-group list-group-flush">
+	            {% for light_id in room_lights[room['id']] %}
+	            <li class="list-group-item">
+                    {{ room_lights[room['id']][light_id]['name'] }}
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="switch_{{ light_id }}" onchange="switchLight({{ light_id }})" {% if room_lights[room['id']][light_id]['state']['on'] %}checked="checked"{% endif %} />
+                        <label class="custom-control-label" for="switch_{{ light_id }}">Switch</label>
+                    </div>
+                </li>
+	            {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+var colours = [
+	'red',
+	'orange',
+	'yellow',
+	'green',
+	'blue',
+	'indigo',
+	'violet'
+];
+var colour_choice = 0;
+function get_colour(){
+	return colours[colour_choice++];
+}
+var ctx = document.getElementById('myChart').getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        datasets: [
+			{% for room in rooms %}
+				{% if room_temps[room['id']] %}
+		    {
+			    label: '{{ room['name'] }}',
+            	data: [
+				{% for room_temp in room_temps[room['id']] %}
+			        {
+                        t: {{ room_temp['timestamp']*1000 }},
+                        y: {{ room_temp['temperature'] }}
+                    },
+				{% endfor %}
+		        ],
+			    fill: false,
+			    borderColor: get_colour(),
+        	},
+				{% endif %}
+			{% endfor %}
+	    ]
+    },
+    options: {
+        scales: {
+            xAxes: [{
+                type: 'time',
+                distribution: 'series',
+                time: {
+                    unit: 'minute',
+                    displayFormats: {
+                        minute: 'HH:mm',
+                        second: 'HH:mm:ss',
+                    }
+                },
+                ticks: {
+                    source: 'auto',
+                    autoSkip: true,
+                },
+            }]
+        }
+    }
+});
+</script>
+
+{% endblock %}
+{% block footer %}
+DB {{ db_file_size }} bytes
+{% endblock %}

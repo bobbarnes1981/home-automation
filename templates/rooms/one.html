@@ -2,12 +2,18 @@
 {% block title %}testing{% endblock %}
 
 {% block content %}
-<h1>{{ room[1] }}</h1>
+<h1>{{ room['name'] }}</h1>
 
 <ul>
-	{% for light in lights %}
-	<li>{{ light['name'] }} ({{ light['state']['on'] }})</li>
+	{% for light_id in lights %}
+	<li>
+        {{ lights[light_id]['name'] }}
+        <div class="custom-control custom-switch">
+            <input type="checkbox" class="custom-control-input" id="switch_{{ light_id }}" onchange="switchLight({{ light_id }})" {% if lights[light_id]['state']['on'] %}checked="checked"{% endif %} />
+            <label class="custom-control-label" for="switch_{{ light_id }}">Switch</label>
+        </div>
+    </li>
 	{% endfor %}
-	<li>{{ temperature }}c</li>
+	<li>{{ temperature['temperature'] }}c (@{{ temperature['date'] }})</li>
 </ul>
 {% endblock %}
