@@ -19,6 +19,15 @@
     </div>
 </div>
 <div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body bg-light">
+                <div class="card-text">Rooms</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
     {% for room in rooms %}
     <div class="col-3">
         <div class="card mb-3">
@@ -45,6 +54,40 @@
         </div>
     </div>
     {% endfor %}
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body bg-light">
+                <div class="card-text">System</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Database
+            </div>
+            <div class="card-body">
+                {{ db_file_name }} <br/>
+                {{ db_file_size }} bytes<br/>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Disk
+            </div>
+            <div class="card-body">
+               {{ disk_total }} bytes total<br/>
+               {{ disk_free }} bytes free<br/>
+               {{ disk_used }} bytes used<br/>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -107,7 +150,4 @@ var myChart = new Chart(ctx, {
 });
 </script>
 
-{% endblock %}
-{% block footer %}
-DB {{ db_file_size }} bytes
 {% endblock %}

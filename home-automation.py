@@ -3,6 +3,7 @@ from flask import jsonify, render_template, request
 
 from datetime import datetime
 import os
+import psutil
 import requests
 import sqlite3
 import time
@@ -84,7 +85,8 @@ def dashboard():
         for hue_light in hue_group['lights']:
             light = hue.get_light(hue_light)
             room_lights[room['id']][hue_light] = light
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_size = db_file_size)
+    root_data = psutil.disk_usage('/')
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free)
 
 def dictionary_factory(cursor, row):
     d = {}
