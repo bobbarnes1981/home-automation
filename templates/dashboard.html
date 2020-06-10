@@ -22,8 +22,8 @@
     {% for room in rooms %}
     <div class="col-3">
         <div class="card mb-3">
+            <div class="card-header">{{ room['name'] }}</div>
             <div class="card-body">
-                <h5 class="card-title">{{ room['name'] }}</h5>
                 {% if room_temps[room['id']] %}
                 {% set last_temp = room_temps[room['id']]|last %}
                 <p class="card-text">{{ last_temp['temperature'] }}c</p>
