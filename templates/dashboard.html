@@ -11,7 +11,7 @@
                 Temperature
             </div>
             <div class="card-body">
-                <canvas id="myChart" width="" height=""></canvas>
+                <canvas id="temperature-chart" width="" height=""></canvas>
             </div>
         </div>
     </div>
@@ -109,6 +109,16 @@
             </div>
         </div>
     </div>
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Disk
+            </div>
+            <div class="card-body">
+                <canvas id="disk-chart" width="" height=""></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -125,8 +135,34 @@ var colour_choice = 0;
 function get_colour(){
 	return colours[colour_choice++];
 }
-var ctx = document.getElementById('myChart').getContext('2d');
-var myChart = new Chart(ctx, {
+
+var d_ctx = document.getElementById('disk-chart').getContext('2d');
+var d_chart = new Chart(d_ctx, {
+    type: 'pie',
+    data: {
+        datasets: [{
+            data: [
+                {{ disk_used / disk_total }},
+                {{ disk_free / disk_total }}
+            ],
+            backgroundColor: [
+                'red',
+                'green'
+            ],
+            label: '/'
+        }],
+        labels: [
+            'Used',
+            'Free'
+        ]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+var tc_ctx = document.getElementById('temperature-chart').getContext('2d');
+var tc_chart = new Chart(tc_ctx, {
     type: 'line',
     data: {
         datasets: [
