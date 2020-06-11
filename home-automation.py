@@ -6,6 +6,7 @@ import os
 import psutil
 import requests
 import sqlite3
+import subprocess
 import time
 
 app = Flask(__name__)
@@ -94,16 +95,21 @@ def dashboard():
                 room_lights[room['id']][hue_light] = light
     db_file_size = os.stat(DataStore.database).st_size
     cpu_perc = psutil.cpu_percent()
+    cpu_temp = get_cpu_temp()
     root_data = psutil.disk_usage('/')
     mem_data = psutil.virtual_memory()
     weather = metoffice.get_observation(store.get_config('metoffice_location'))
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, weather = weather)
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather = weather)
 
 def dictionary_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
     return d
+
+def get_cpu_temp():
+    raw = subprocess.check_output(['vcgencmd', 'measure_temp'])
+    return raw[5:9]
 
 class DataStore(object):
 
