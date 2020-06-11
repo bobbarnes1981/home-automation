@@ -29,13 +29,6 @@ def metoffice_config():
     metoffice_locations = metoffice.get_observation_locations()
     return render_template('metoffice/config.html', metoffice_key = metoffice_key, metoffice_location = metoffice_location, metoffice_locations = metoffice_locations)
 
-@app.route('/rooms/add', methods = ['GET', 'POST'])
-def rooms_add():
-    if request.method == 'POST':
-        store.add_room(request.form['room_name'])
-    rooms = store.get_rooms()
-    return render_template('rooms/add.html', rooms = rooms)
-
 @app.route('/rooms/config', methods = ['GET', 'POST'])
 def rooms_config():
     if request.method == 'POST':
@@ -62,8 +55,10 @@ def rooms_one(room_id):
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
 
-@app.route('/rooms')
+@app.route('/rooms', methods = ['GET', 'POST'])
 def rooms_all():
+    if request.method == 'POST':
+        store.add_room(request.form['room_name'])
     rooms = store.get_rooms()
     return render_template('rooms/all.html', rooms = rooms)
 
@@ -98,9 +93,11 @@ def dashboard():
                 light = hue.get_light(hue_light)
                 room_lights[room['id']][hue_light] = light
     db_file_size = os.stat(DataStore.database).st_size
+    cpu_perc = psutil.cpu_percent()
     root_data = psutil.disk_usage('/')
+    mem_data = psutil.virtual_memory()
     weather = metoffice.get_observation(store.get_config('metoffice_location'))
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, weather = weather)
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, weather = weather)
 
 def dictionary_factory(cursor, row):
     d = {}
