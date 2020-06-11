@@ -3,8 +3,10 @@ from flask import jsonify, render_template, request
 
 from datetime import datetime
 import os
+import psutil
 import requests
 import sqlite3
+import subprocess
 import time
 
 app = Flask(__name__)
@@ -18,12 +20,15 @@ def hue_config():
     hue_username = store.get_config('hue_username')
     return render_template('hue/config.html', hue_address = hue_address, hue_username = hue_username)
 
-@app.route('/rooms/add', methods = ['GET', 'POST'])
-def rooms_add():
+@app.route('/metoffice/config', methods = ['GET', 'POST'])
+def metoffice_config():
     if request.method == 'POST':
-        store.add_room(request.form['room_name'])
-    rooms = store.get_rooms()
-    return render_template('rooms/add.html', rooms = rooms)
+        store.set_config('metoffice_key', request.form['metoffice_key'])
+        store.set_config('metoffice_location', request.form['metoffice_location'])
+    metoffice_key = store.get_config('metoffice_key')
+    metoffice_location = store.get_config('metoffice_location')
+    metoffice_locations = metoffice.get_observation_locations()
+    return render_template('metoffice/config.html', metoffice_key = metoffice_key, metoffice_location = metoffice_location, metoffice_locations = metoffice_locations)
 
 @app.route('/rooms/config', methods = ['GET', 'POST'])
 def rooms_config():
@@ -34,6 +39,7 @@ def rooms_config():
             store.update_room(room['id'], room['name'], hue_group_id)
     rooms = store.get_rooms()
     hue_groups = hue.get_groups()
+    hue_groups[0] = {'name': ''}
     return render_template('rooms/config.html', rooms = rooms, hue_groups = hue_groups)
 
 @app.route('/rooms/<int:room_id>')
@@ -41,16 +47,19 @@ def rooms_one(room_id):
     room = store.get_room(room_id)
     hue_group = hue.get_group(room['hue_group_id'])
     lights = {}
-    for hue_light in hue_group['lights']:
-        light = hue.get_light(hue_light)
-        lights[hue_light] = light
+    if room['hue_group_id']:
+        for hue_light in hue_group['lights']:
+            light = hue.get_light(hue_light)
+            lights[hue_light] = light
     temperature = store.get_temperature(room_id)
     if temperature:
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
 
-@app.route('/rooms')
+@app.route('/rooms', methods = ['GET', 'POST'])
 def rooms_all():
+    if request.method == 'POST':
+        store.add_room(request.form['room_name'])
     rooms = store.get_rooms()
     return render_template('rooms/all.html', rooms = rooms)
 
@@ -72,25 +81,35 @@ def api_lights(light_id):
 
 @app.route('/')
 def dashboard():
-    db_file_size = os.stat(DataStore.database).st_size
     rooms = store.get_rooms()
     room_temps = {}
     room_lights = {}
     for room in rooms:
         temps = store.get_temperatures(room['id'], time.time() - (60*60*24))
         room_temps[room['id']] = temps
-        hue_group = hue.get_group(room['hue_group_id'])
-        room_lights[room['id']] = {}
-        for hue_light in hue_group['lights']:
-            light = hue.get_light(hue_light)
-            room_lights[room['id']][hue_light] = light
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_size = db_file_size)
+        if room['hue_group_id']:
+            hue_group = hue.get_group(room['hue_group_id'])
+            room_lights[room['id']] = {}
+            for hue_light in hue_group['lights']:
+                light = hue.get_light(hue_light)
+                room_lights[room['id']][hue_light] = light
+    db_file_size = os.stat(DataStore.database).st_size
+    cpu_perc = psutil.cpu_percent()
+    cpu_temp = get_cpu_temp()
+    root_data = psutil.disk_usage('/')
+    mem_data = psutil.virtual_memory()
+    weather = metoffice.get_observation(store.get_config('metoffice_location'))
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather = weather)
 
 def dictionary_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
     return d
+
+def get_cpu_temp():
+    raw = subprocess.check_output(['vcgencmd', 'measure_temp'])
+    return raw[5:9]
 
 class DataStore(object):
 
@@ -302,6 +321,28 @@ class Hue(object):
     def set_light(self, id, state):
         return self.request_put('lights/{0}/state'.format(id), {"on": state})
 
+class MetOffice(object):
+
+    base_url = 'datapoint.metoffice.gov.uk/public/data'
+    datatype = 'json'
+
+    def __init__(self):
+        pass
+
+    def url(self, path):
+        return 'http://{0}/{1}?res=hourly&key={2}'.format(self.base_url, path, store.get_config('metoffice_key'))
+
+    def request_get(self, path):
+        r = requests.get(self.url(path))
+        return r.json()
+
+    def get_observation_locations(self):
+        return self.request_get('/val/wxobs/all/{0}/sitelist'.format(self.datatype))
+
+    def get_observation(self, id):
+        return self.request_get('/val/wxobs/all/{0}/{1}'.format(self.datatype, id))
+
 store = DataStore()
 hue = Hue()
+metoffice = MetOffice()
 

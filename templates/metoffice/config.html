@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block title %}metoffice config{% endblock %}
+
+{% block content %}
+<h1>metoffice config</h1>
+
+<form action="" method="POST">
+	<label for="metoffice-key">Key</label>
+	<input id="metoffice-key" type="text" name="metoffice_key" value="{{ metoffice_key }}" />
+	</br>
+
+	<label for="metoffice-location">Location</label>
+	<select id="metoffice-location" type="text" name="metoffice_location">
+    {% for location in metoffice_locations['Locations']['Location'] %}
+        <option {% if metoffice_location == location['id'] %}selected="selected"{% endif %} value="{{ location['id'] }}">{{ location['name'] }} ({{ location['unitaryAuthArea'] }})</option>
+    {% endfor %}
+    </select>
+	</br>
+
+	<input type="submit" value="Save" />
+</form>
+
+{% endblock %}

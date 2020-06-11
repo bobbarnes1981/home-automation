@@ -9,4 +9,12 @@
 	<li><a href="{{ url_for('rooms_one', room_id=room['id']) }}">{{ room['name'] }} ({{ room['id'] }})</a></li>
 	{% endfor %}
 </ul>
+
+<form action="" method="POST">
+	<label for="room-name">Room</label>
+	<input id="room-name" type="text" name="room_name" value="{{ room_name }}" />
+	</br>
+
+	<input type="submit" value="Add" />
+</form>
 {% endblock %}

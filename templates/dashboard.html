@@ -11,11 +11,41 @@
                 Temperature
             </div>
             <div class="card-body">
-                <canvas id="myChart" width="" height=""></canvas>
+                <canvas id="temperature-chart" width="" height=""></canvas>
             </div>
         </div>
     </div>
     <div class="col-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                Weather
+            </div>
+            <div class="card-body">
+                MetOffice {{ weather['SiteRep']['DV']['Location']['name'] }}
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for p in weather['SiteRep']['Wx']['Param'] %}
+                    {% set period = weather['SiteRep']['DV']['Location']['Period']|first %}
+                    {% set d = period['Rep']|first %}
+                    {% if d[p['name']] %}
+	            <li class="list-group-item py-1">
+                        {{ p['$'] }}
+                        {{ d[p['name']] }}
+                        {{ p['units'] }}
+                </li>
+                    {% endif %}
+	            {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body bg-light">
+                <div class="card-text">Rooms</div>
+            </div>
+        </div>
     </div>
 </div>
 <div class="row">
@@ -46,6 +76,83 @@
     </div>
     {% endfor %}
 </div>
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body bg-light">
+                <div class="card-text">System</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Database
+            </div>
+            <div class="card-body">
+                {{ db_file_name }} <br/>
+                {{ db_file_size / 1024 }} KB<br/>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Disk
+            </div>
+            <div class="card-body">
+               {{ disk_total / 1024 / 1024 / 1024 }} GB total<br/>
+               {{ disk_free / 1024 / 1024 / 1024 }} GB free<br/>
+               {{ disk_used / 1024 / 1024 / 1024 }} GB used<br/>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Disk
+            </div>
+            <div class="card-body">
+                <canvas id="disk-chart" width="" height=""></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Memory
+            </div>
+            <div class="card-body">
+               {{ mem_total / 1024 / 1024 / 1024 }} GB total<br/>
+               {{ mem_avail / 1024 / 1024 / 1024 }} GB available<br/>
+               {{ mem_used / 1024 / 1024 / 1024 }} GB used<br/>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                Memory
+            </div>
+            <div class="card-body">
+                <canvas id="memory-chart" width="" height=""></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                CPU
+            </div>
+            <div class="card-body">
+                {{ cpu_perc }}%<br/>
+                {{ cpu_temp }}c
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 var colours = [
@@ -61,8 +168,59 @@ var colour_choice = 0;
 function get_colour(){
 	return colours[colour_choice++];
 }
-var ctx = document.getElementById('myChart').getContext('2d');
-var myChart = new Chart(ctx, {
+
+var d_ctx = document.getElementById('disk-chart').getContext('2d');
+var d_chart = new Chart(d_ctx, {
+    type: 'pie',
+    data: {
+        datasets: [{
+            data: [
+                {{ disk_used / disk_total }},
+                {{ disk_free / disk_total }}
+            ],
+            backgroundColor: [
+                'red',
+                'green'
+            ],
+            label: '/'
+        }],
+        labels: [
+            'Used',
+            'Free'
+        ]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+var m_ctx = document.getElementById('memory-chart').getContext('2d');
+var m_chart = new Chart(m_ctx, {
+    type: 'pie',
+    data: {
+        datasets: [{
+            data: [
+                {{ mem_used / mem_total }},
+                {{ mem_avail / mem_total }}
+            ],
+            backgroundColor: [
+                'red',
+                'green'
+            ],
+            label: '/'
+        }],
+        labels: [
+            'Used',
+            'Free'
+        ]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+var tc_ctx = document.getElementById('temperature-chart').getContext('2d');
+var tc_chart = new Chart(tc_ctx, {
     type: 'line',
     data: {
         datasets: [
@@ -95,7 +253,8 @@ var myChart = new Chart(ctx, {
                     displayFormats: {
                         minute: 'HH:mm',
                         second: 'HH:mm:ss',
-                    }
+                    },
+                    tooltipFormat: 'YYYY-MM-DD HH:mm:ss',
                 },
                 ticks: {
                     source: 'auto',
@@ -107,7 +266,4 @@ var myChart = new Chart(ctx, {
 });
 </script>
 
-{% endblock %}
-{% block footer %}
-DB {{ db_file_size }} bytes
 {% endblock %}
