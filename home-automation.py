@@ -86,7 +86,7 @@ def dashboard():
         room_lights[room['id']] = hue.get_lights_in_group(room['hue_group_id'])
     db_file_size = os.stat(DataStore.database).st_size
     cpu_perc = psutil.cpu_percent()
-    cpu_temp = get_cpu_temp()
+    cpu_temp = vcgc.measure_temp()
     root_data = psutil.disk_usage('/')
     mem_data = psutil.virtual_memory()
     weather = metoffice.get_observation(store.get_config('metoffice_location'))
@@ -98,9 +98,16 @@ def dictionary_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
-def get_cpu_temp():
-    raw = subprocess.check_output(['vcgencmd', 'measure_temp'])
-    return raw[5:9]
+class VCGenCmd(object):
+
+    def __init__(self):
+        pass
+
+    def get_raw(self, command):
+        return subprocess.check_output(['vcgencmd', command])
+
+    def measure_temp(self):
+        return self.get_raw('measure_temp')[5:9]
 
 class DataStore(object):
 
@@ -345,4 +352,5 @@ class MetOffice(object):
 store = DataStore()
 hue = Hue()
 metoffice = MetOffice()
+vcgc = VCGenCmd()
 
