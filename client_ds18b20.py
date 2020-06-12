@@ -4,6 +4,7 @@ import requests
 import sys
 from threading import Thread
 import time
+from datetime import datetime
 
 uri = 'http://home-automation/api/room/<room_id>/temperature'
 if len(sys.argv) != 2:
@@ -38,12 +39,15 @@ class Sensor(object):
 class Service(Thread):
     def __init__(self, sensor):
         Thread.__init__(self)
+        self.starttime = time.time()
         self.sensor = sensor
         self.running = True
 
     def run(self):
         while self.running:
             temp = self.sensor.temperature()
+            print(datetime.fromtimestamp(time.time()))
+            print(temp)
             try:
                 payload = { 'temperature_c' : temp }
                 header = { 'content-type': 'application/json' }
@@ -51,8 +55,7 @@ class Service(Thread):
                 print(response.text)
             except Exception, e:
                 print(e)
-            print(temp)
-            time.sleep(60)
+            time.sleep(60.0 - ((time.time() - self.starttime) % 60.0))
 
 srv = Service(Sensor())
 #srv.daemon = True
