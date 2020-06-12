@@ -21,16 +21,18 @@
                 Weather
             </div>
             <div class="card-body">
-                MetOffice {{ weather['SiteRep']['DV']['Location']['name'] }}
+                MetOffice {{ weather_location }}
             </div>
             <ul class="list-group list-group-flush">
-                {% for p in weather['SiteRep']['Wx']['Param'] %}
-                    {% set period = weather['SiteRep']['DV']['Location']['Period']|first %}
-                    {% set d = period['Rep']|first %}
-                    {% if d[p['name']] %}
+                {% for p in weather_keys %}
+                    {% if weather_data[p['name']] %}
 	            <li class="list-group-item py-1">
                         {{ p['$'] }}
-                        {{ d[p['name']] }}
+                        {% if p['name'] == 'W' %}
+                        {{ weather_types[weather_data[p['name']]] }}
+                        {% else %}
+                        {{ weather_data[p['name']] }}
+                        {% endif %}
                         {{ p['units'] }}
                 </li>
                     {% endif %}

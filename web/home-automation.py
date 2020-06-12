@@ -98,7 +98,21 @@ def dashboard():
     root_data = psutil.disk_usage('/')
     mem_data = psutil.virtual_memory()
     weather = metoffice.get_observation(store.get_config('metoffice_location'))
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather = weather)
+    weather_types = MetOffice.weather_types
+    weather_location = weather['SiteRep']['DV']['Location']['name']
+    weather_keys = weather['SiteRep']['Wx']['Param']
+    weather_data = get_latest_weather(weather)
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather_types = weather_types, weather_location = weather_location, weather_keys = weather_keys, weather_data = weather_data)
+
+def get_latest_weather(data):
+    now = datetime.now()
+    today = now.strftime('%Y-%m-%dZ')
+    minutes = now.hour * 60
+    for period in data['SiteRep']['DV']['Location']['Period']:
+        if period['value'] == datetime.now().strftime('%Y-%m-%dZ'):
+            rep = period['Rep'][-1]
+            return rep
+    return []
 
 def dictionary_factory(cursor, row):
     '''Load the sqlite row into a dictionary'''
@@ -364,6 +378,41 @@ class MetOffice(object):
 
     base_url = 'datapoint.metoffice.gov.uk/public/data'
     datatype = 'json'
+
+    weather_types = {
+        'NA': 'Not available',
+        '0': 'Clear night',
+        '1': 'Sunny day',
+        '2': 'Partly cloudy (night)',
+        '3': 'Partly cloud (day)',
+        '4': 'Not used',
+        '5': 'Mist',
+        '6': 'Fog',
+        '7': 'Cloudy',
+        '8': 'Overcast',
+        '9': 'Light rain shower (night)',
+        '10': 'Light rain shower (day)',
+        '11': 'Drizzle',
+        '12': 'Light rain',
+        '13': 'Heavy rain shower (night)',
+        '14': 'Heavy rain shower (day)',
+        '15': 'Heavy rain',
+        '16': 'Sleet shower (night)',
+        '17': 'Sleet shower (day)',
+        '18': 'Sleet',
+        '19': 'Hail shower (night)',
+        '20': 'Hail shower (day)',
+        '21': 'Hail',
+        '22': 'Light snow shower (night)',
+        '23': 'Light snow shower (day)',
+        '24': 'Light snow',
+        '25': 'Heavy snow shower (night)',
+        '26': 'Heavy snow shower (day)',
+        '27': 'Heavy snow',
+        '28': 'Thunder shower (night)',
+        '29': 'Thunder shower (day)',
+        '30': 'Thunder',
+    }
 
     def __init__(self):
         pass
