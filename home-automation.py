@@ -143,10 +143,11 @@ class DataStore(object):
         ''')
 
         cur.execute('''
-            CREATE TABLE IF NOT EXISTS temperatures (
+            CREATE TABLE IF NOT EXISTS datastore (
                 timestamp INTEGER NOT NULL,
                 room_id INTEGER NOT NULL,
-                temperature REAL NOT NULL,
+                data_key TEXT NOT NULL,
+                data_val REAL NOT NULL,
                 FOREIGN KEY (room_id) REFERENCES rooms (id) ON DELETE CASCADE
             );
         ''')
@@ -258,12 +259,12 @@ class DataStore(object):
         cur = cxn.cursor()
 
         cur.execute('''
-            INSERT INTO temperatures (
-                timestamp, room_id, temperature
+            INSERT INTO datastore (
+                timestamp, room_id, data_key, data_val
             ) VALUES (
-                :timestamp, :room_id, :temperature
+                :timestamp, :room_id, :data_key, :temperature
             );
-        ''', {"timestamp": time.time(), "room_id": room_id, "temperature": temperature})
+        ''', {"timestamp": time.time(), "room_id": room_id, "data_key": 'temperature_c', "temperature": temperature})
 
         cxn.commit()
         cxn.close()
@@ -274,8 +275,8 @@ class DataStore(object):
         cur = cxn.cursor()
 
         cur.execute('''
-            SELECT temperature, timestamp FROM temperatures WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 1;
-        ''', {"room_id": room_id})
+            SELECT data_val AS temperature, timestamp FROM datastore WHERE room_id = :room_id AND data_key = :data_key ORDER BY timestamp DESC LIMIT 1;
+        ''', {"room_id": room_id, "data_key": 'temperature_c'})
 
         val = cur.fetchone()
 
@@ -289,8 +290,8 @@ class DataStore(object):
         cur = cxn.cursor()
 
         cur.execute('''
-            SELECT temperature, timestamp FROM temperatures WHERE room_id = :room_id AND timestamp > :timestamp ORDER BY timestamp;
-        ''', {"room_id": room_id, "timestamp": from_timestamp})
+            SELECT data_val AS temperature, timestamp FROM datastore WHERE room_id = :room_id AND data_key = :data_key AND timestamp > :timestamp ORDER BY timestamp;
+        ''', {"room_id": room_id, "data_key": 'temperature_c', "timestamp": from_timestamp})
 
         val = cur.fetchmany(1440)
 
