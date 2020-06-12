@@ -144,9 +144,14 @@ class DataStore(object):
         cxn.commit()
         cxn.close()
 
-    def get_config(self, key):
+    def connect(self, row_factory):
         cxn = sqlite3.connect(self.database)
-        cxn.row_factory = dictionary_factory
+        if row_factory:
+            cxn.row_factory = row_factory
+        return cxn
+
+    def get_config(self, key):
+        cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
         cur.execute('''
@@ -174,7 +179,7 @@ class DataStore(object):
                 UPDATE configurations SET config_val = :val WHERE config_key = :key;
             '''
 
-        cxn = sqlite3.connect(self.database)
+        cxn = self.connect(None)
         cur = cxn.cursor()
 
         cur.execute(query, {'key':key, 'val':value})
@@ -183,8 +188,7 @@ class DataStore(object):
         cxn.close()
 
     def get_rooms(self):
-        cxn = sqlite3.connect(self.database)
-        cxn.row_factory = dictionary_factory
+        cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
         cur.execute('''
@@ -196,14 +200,13 @@ class DataStore(object):
         
         return val
 
-    def get_room(self, id):
-        cxn = sqlite3.connect(self.database)
-        cxn.row_factory = dictionary_factory
+    def get_room(self, room_id):
+        cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
         cur.execute('''
             SELECT id, name, hue_group_id FROM rooms WHERE id = :id;
-        ''', {"id": id})
+        ''', {"id": room_id})
         val = cur.fetchone()
         
         cxn.close()
@@ -211,7 +214,7 @@ class DataStore(object):
         return val
 
     def add_room(self, name):
-        cxn = sqlite3.connect(self.database)
+        cxn = self.connect(None)
         cur = cxn.cursor()
 
         cur.execute('''
@@ -221,19 +224,19 @@ class DataStore(object):
         cxn.commit()
         cxn.close()
 
-    def update_room(self, id, name, hue_group_id):
-        cxn = sqlite3.connect(self.database)
+    def update_room(self, room_id, name, hue_group_id):
+        cxn = self.connect(None)
         cur = cxn.cursor()
 
         cur.execute('''
             UPDATE rooms SET name = :name, hue_group_id = :hue_group_id WHERE id = :id;
-        ''', {'name': name, 'hue_group_id': hue_group_id, 'id': id})
+        ''', {'name': name, 'hue_group_id': hue_group_id, 'id': room_id})
 
         cxn.commit()
         cxn.close()
 
     def set_temperature(self, room_id, temperature):
-        cxn = sqlite3.connect(self.database)
+        cxn = self.connect(None)
         cur = cxn.cursor()
 
         cur.execute('''
@@ -248,8 +251,7 @@ class DataStore(object):
         cxn.close()
 
     def get_temperature(self, room_id):
-        cxn = sqlite3.connect(self.database)
-        cxn.row_factory = dictionary_factory
+        cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
         cur.execute('''
@@ -263,8 +265,7 @@ class DataStore(object):
         return None
 
     def get_temperatures(self, room_id, from_timestamp):
-        cxn = sqlite3.connect(self.database)
-        cxn.row_factory = dictionary_factory
+        cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
         cur.execute('''
