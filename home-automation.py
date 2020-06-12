@@ -13,6 +13,7 @@ app = Flask(__name__)
 
 @app.route('/hue/config', methods = ['GET', 'POST'])
 def hue_config():
+    '''Configure the hue address and username'''
     if request.method == 'POST':
         store.set_config('hue_address', request.form['hue_address'])
         store.set_config('hue_username', request.form['hue_username'])
@@ -22,6 +23,7 @@ def hue_config():
 
 @app.route('/metoffice/config', methods = ['GET', 'POST'])
 def metoffice_config():
+    '''Configure the met office key and location'''
     if request.method == 'POST':
         store.set_config('metoffice_key', request.form['metoffice_key'])
         store.set_config('metoffice_location', request.form['metoffice_location'])
@@ -32,6 +34,7 @@ def metoffice_config():
 
 @app.route('/rooms/config', methods = ['GET', 'POST'])
 def rooms_config():
+    '''Configure the relationship between the hue groups and rooms'''
     if request.method == 'POST':
         rooms = store.get_rooms()
         for room in rooms:
@@ -44,6 +47,7 @@ def rooms_config():
 
 @app.route('/rooms/<int:room_id>')
 def rooms_one(room_id):
+    '''Show one room'''
     room = store.get_room(room_id)
     hue_group = hue.get_group(room['hue_group_id'])
     lights = hue.get_lights_in_group(room['hue_group_id'])
@@ -54,6 +58,7 @@ def rooms_one(room_id):
 
 @app.route('/rooms', methods = ['GET', 'POST'])
 def rooms_all():
+    '''List all rooms and allow adding a new room'''
     if request.method == 'POST':
         store.add_room(request.form['room_name'])
     rooms = store.get_rooms()
@@ -61,6 +66,7 @@ def rooms_all():
 
 @app.route('/api/rooms/<int:room_id>/temperature', methods = [ 'POST' ])
 def api_rooms_temperature(room_id):
+    '''Append a new temperature reading for the room'''
     # TODO: validate room id
     if request.method == 'POST':
         data = request.get_json()
@@ -69,6 +75,7 @@ def api_rooms_temperature(room_id):
 
 @app.route('/api/lights/<int:light_id>', methods = [ 'PUT' ])
 def api_lights(light_id):
+    '''Set the state of the specified hue light'''
     # TODO: validate light id?
     if request.method == 'PUT':
         data = request.get_json()
@@ -77,6 +84,7 @@ def api_lights(light_id):
 
 @app.route('/')
 def dashboard():
+    '''A collection of information'''
     rooms = store.get_rooms()
     room_temps = {}
     room_lights = {}
@@ -93,6 +101,7 @@ def dashboard():
     return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather = weather)
 
 def dictionary_factory(cursor, row):
+    '''Load the sqlite row into a dictionary'''
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
@@ -107,6 +116,7 @@ class VCGenCmd(object):
         return subprocess.check_output(['vcgencmd', command])
 
     def measure_temp(self):
+        '''call the measure_temp command on vcgencmd'''
         return self.get_raw('measure_temp')[5:9]
 
 class DataStore(object):
@@ -145,12 +155,14 @@ class DataStore(object):
         cxn.close()
 
     def connect(self, row_factory):
+        '''Connect and optionally set the row factory'''
         cxn = sqlite3.connect(self.database)
         if row_factory:
             cxn.row_factory = row_factory
         return cxn
 
     def get_config(self, key):
+        '''Get the specified config value'''
         cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
@@ -166,6 +178,7 @@ class DataStore(object):
         return None
 
     def set_config(self, key, value):
+        '''Set the specified config value'''
         if self.get_config(key) == None:
             query = '''
                 INSERT INTO configurations (
@@ -188,6 +201,7 @@ class DataStore(object):
         cxn.close()
 
     def get_rooms(self):
+        '''Get all the rooms'''
         cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
@@ -201,6 +215,7 @@ class DataStore(object):
         return val
 
     def get_room(self, room_id):
+        '''Get a single room'''
         cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
@@ -214,6 +229,7 @@ class DataStore(object):
         return val
 
     def add_room(self, name):
+        '''Add a room with the specified name'''
         cxn = self.connect(None)
         cur = cxn.cursor()
 
@@ -225,6 +241,7 @@ class DataStore(object):
         cxn.close()
 
     def update_room(self, room_id, name, hue_group_id):
+        '''Update the room with the specified id'''
         cxn = self.connect(None)
         cur = cxn.cursor()
 
@@ -236,6 +253,7 @@ class DataStore(object):
         cxn.close()
 
     def set_temperature(self, room_id, temperature):
+        '''Append a new temperature reading for the room with the current timestamp'''
         cxn = self.connect(None)
         cur = cxn.cursor()
 
@@ -251,6 +269,7 @@ class DataStore(object):
         cxn.close()
 
     def get_temperature(self, room_id):
+        '''Get the last temperature for the room'''
         cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
@@ -265,6 +284,7 @@ class DataStore(object):
         return None
 
     def get_temperatures(self, room_id, from_timestamp):
+        '''Get the temperatures for the reoom between now and from_timestamp'''
         cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
@@ -286,17 +306,21 @@ class Hue(object):
         pass
 
     def url(self, path):
+        '''Build the hue api url'''
         return 'http://{0}/api/{1}/{2}'.format(store.get_config('hue_address'), store.get_config('hue_username'), path)
 
     def request_get(self, path):
+        '''Execute a get request and return the json'''
         r = requests.get(self.url(path))
         return r.json()
 
     def request_put(self, path, json):
+        '''Execute a put request and return the json'''
         r = requests.put(self.url(path), json = json)
         return r.json()
 
     def register(self, device_type):
+        '''Register the username with the hue hub'''
         # post
         # /api
         # {"devicetype":device_type}
@@ -306,12 +330,15 @@ class Hue(object):
         pass
 
     def get_groups(self):
+        '''Get all the groups from the hue hub'''
         return self.request_get('groups')
 
     def get_group(self, group_id):
+        '''Get the specified group from the hue hub'''
         return self.request_get('groups/{0}'.format(group_id))
 
     def get_lights_in_group(self, group_id):
+        '''Get all the lights for the specified group'''
         lights = {}
         if group_id:
             group = self.get_group(group_id)
@@ -321,12 +348,15 @@ class Hue(object):
         return lights
 
     def get_lights(self):
+        '''Get all the lights from the hue hub'''
         return self.request_get('lights')
 
     def get_light(self, light_id):
+        '''Get the specified light from the hue hub'''
         return self.request_get('lights/{0}'.format(light_id))
 
     def set_light(self, light_id, state):
+        '''Set the state of the specified light'''
         return self.request_put('lights/{0}/state'.format(light_id), {"on": state})
 
 class MetOffice(object):
@@ -338,16 +368,20 @@ class MetOffice(object):
         pass
 
     def url(self, path):
+        '''Build the met office data point url'''
         return 'http://{0}/{1}?res=hourly&key={2}'.format(self.base_url, path, store.get_config('metoffice_key'))
 
     def request_get(self, path):
+        '''Execute a get request and return the json'''
         r = requests.get(self.url(path))
         return r.json()
 
     def get_observation_locations(self):
+        '''Get a list of observation locations'''
         return self.request_get('/val/wxobs/all/{0}/sitelist'.format(self.datatype))
 
     def get_observation(self, id):
+        '''Get the observations for the specified location'''
         return self.request_get('/val/wxobs/all/{0}/{1}'.format(self.datatype, id))
 
 store = DataStore()
