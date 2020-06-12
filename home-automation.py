@@ -46,11 +46,7 @@ def rooms_config():
 def rooms_one(room_id):
     room = store.get_room(room_id)
     hue_group = hue.get_group(room['hue_group_id'])
-    lights = {}
-    if room['hue_group_id']:
-        for hue_light in hue_group['lights']:
-            light = hue.get_light(hue_light)
-            lights[hue_light] = light
+    lights = hue.get_lights_in_group(room['hue_group_id'])
     temperature = store.get_temperature(room_id)
     if temperature:
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
@@ -87,12 +83,7 @@ def dashboard():
     for room in rooms:
         temps = store.get_temperatures(room['id'], time.time() - (60*60*24))
         room_temps[room['id']] = temps
-        if room['hue_group_id']:
-            hue_group = hue.get_group(room['hue_group_id'])
-            room_lights[room['id']] = {}
-            for hue_light in hue_group['lights']:
-                light = hue.get_light(hue_light)
-                room_lights[room['id']][hue_light] = light
+        room_lights[room['id']] = hue.get_lights_in_group(room['hue_group_id'])
     db_file_size = os.stat(DataStore.database).st_size
     cpu_perc = psutil.cpu_percent()
     cpu_temp = get_cpu_temp()
@@ -309,17 +300,26 @@ class Hue(object):
     def get_groups(self):
         return self.request_get('groups')
 
-    def get_group(self, id):
-        return self.request_get('groups/{0}'.format(id))
+    def get_group(self, group_id):
+        return self.request_get('groups/{0}'.format(group_id))
+
+    def get_lights_in_group(self, group_id):
+        lights = {}
+        if group_id:
+            group = self.get_group(group_id)
+            for light_id in group['lights']:
+                light = self.get_light(light_id)
+                lights[light_id] = light
+        return lights
 
     def get_lights(self):
         return self.request_get('lights')
 
-    def get_light(self, id):
-        return self.request_get('lights/{0}'.format(id))
+    def get_light(self, light_id):
+        return self.request_get('lights/{0}'.format(light_id))
 
-    def set_light(self, id, state):
-        return self.request_put('lights/{0}/state'.format(id), {"on": state})
+    def set_light(self, light_id, state):
+        return self.request_put('lights/{0}/state'.format(light_id), {"on": state})
 
 class MetOffice(object):
 
