@@ -19,7 +19,7 @@ function switchLight(hue_id) {
 
 function appendAlert(type, message) {
     var date = new Date();
-    jQuery('.main-content').append(`
+    jQuery('.toast-container').append(`
         <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" style="position: absolute; bottom: 10px; right:10px;">
             <div class="toast-header">
                 <img src="" class="` + type + ` rounded mr-2" alt="" style="width:18px; height:18px; background-color: darkgray">
@@ -36,7 +36,7 @@ function appendAlert(type, message) {
     `);
     var toast = jQuery('.toast').toast({
         animation: true,
-        autohide: false,
+        autohide: true,
         delay: 1000
     })
     toast.on('hidden.bs.toast', function(){

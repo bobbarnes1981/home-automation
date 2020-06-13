@@ -17,7 +17,7 @@
 		<title>{% block title %}{% endblock %} - Home-Automation</title>
 		{% endblock %}
 	</head>
-	<body>
+	<body class="">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
                 <a href="" class="navbar-brand">home-automation</a>
@@ -47,7 +47,7 @@
                </div>
             </div>
         </nav>
-		<div class="container main-content">
+		<div class="container">
 		    {% block content %}{% endblock %}
 		</div>
         <footer class="footer bg-light mt-3">
@@ -55,5 +55,6 @@
             {% block footer %}home-automation{% endblock %}
             </div>
         </footer>
+        <div class="toast-container" style="position: relative;"></div>
 	</body>
 </html>
