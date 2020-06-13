@@ -1,0 +1,111 @@
+
+@font-face {
+    font-family: 'iconvault';
+    src: url('/static/forecastfont-1.2/iconvault_forecastfont.eot');
+    src: url('/static/forecastfont-1.2/iconvault_forecastfont.eot?#iefix') format('embedded-opentype'),
+         url('/static/forecastfont-1.2/iconvault_forecastfont.woff') format('woff'),
+         url('/static/forecastfont-1.2/iconvault_forecastfont.ttf') format('truetype'),
+         url('/static/forecastfont-1.2/iconvault_forecastfont.svg') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.weather-icon-list {
+    height: 100px;
+}
+
+.weather-icon-item {
+    list-style: none;
+}
+
+[class*='icon-'] {
+    font-family: 'iconvault';
+    font-size: 2em;
+}
+
+.basecloud::before {
+    font-family: 'iconvault';
+    content: "\f105";
+    color: rgb(204, 204, 204);
+    position: absolute;
+}
+.basethundercloud::before {
+    font-family: 'iconvault';
+    content: "\f105";
+    color: rgb(0, 0, 0);
+    position: absolute;
+}
+
+.icon-mist::before {
+    content: "\f108";
+    color: rgb(204, 204, 204);
+    position: absolute;
+}
+.icon-drizzle::before {
+    content: "\f10a";
+    color: rgb(130, 178, 228);
+    position: absolute;
+}
+.icon-hail::before {
+    content: "\f10f";
+    color: rgb(204, 204, 204);
+    position: absolute;
+}
+.icon-showers::before {
+    content: "\f104";
+    color: rgb(130, 178, 228);
+    position: absolute;
+}
+.icon-sleet::before {
+    content: "\f10c";
+    color: rgb(172, 211, 243);
+    position: absolute;
+}
+.icon-thunder::before {
+    content: "\f114";
+    color: rgb(255, 165, 0);
+    position: absolute;
+}
+.icon-snowy::before {
+    content: "\f10b";
+    color: rgb(172, 211, 243);
+    position: absolute;
+}
+.icon-rainy::before {
+    content: "\f107";
+    color: rgb(70, 129, 195);
+    position: absolute;
+}
+
+.icon-sunny::after {
+    content: "\f101";
+    color: rgb(255, 165, 0);
+    position: absolute;
+}
+.icon-night::after {
+    content: "\f100";
+    color: rgb(255, 165, 0);
+    position: absolute;
+}
+
+.icon-sun::after {
+    content: "\f113";
+    color: rgb(255, 165, 0);
+    position: absolute;
+}
+.icon-moon::after {
+    content: "\f10d";
+    color: rgb(255, 165, 0);
+    position: absolute;
+}
+.icon-cloud::after {
+    content: "\f106";
+    color: rgb(204, 204, 204);
+    position: absolute;
+}
+.icon-overcast::after {
+    content: "\f106";
+    color: rgb(0, 0, 0);
+    position: absolute;
+}
+

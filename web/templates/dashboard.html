@@ -29,9 +29,17 @@
 	            <li class="list-group-item py-1">
                         {{ p['$'] }}
                         {% if p['name'] == 'W' %}
-                        {{ weather_types[weather_data[p['name']]] }}
+                            {{ weather_types[weather_data[p['name']]] }}
+
+                            {% if weather_icons[weather_data[p['name']]] %}
+                    <ul class="weather-icon-list">
+                                {% for icon in weather_icons[weather_data[p['name']]] %}
+                        <li class="weather-icon-item {{ icon }}"></li>
+                                {% endfor %}
+                    </ul>
+                            {% endif %}
                         {% else %}
-                        {{ weather_data[p['name']] }}
+                            {{ weather_data[p['name']] }}
                         {% endif %}
                         {{ p['units'] }}
                 </li>

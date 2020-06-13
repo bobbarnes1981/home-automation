@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}metoffice config{% endblock %}
+
+{% block content %}
+<h1>metoffice test</h1>
+
+<div class="row">
+{% for key in weather_types %}
+
+<div class="col-3">
+<div class="card mb-3">
+    <div class="card-header">
+    {{ key }}: {{ weather_types[key] }}
+    </div>
+    <div class="card-body">
+    {% if weather_icons[key] %}
+    <ul class="weather-icon-list">
+        {% for icon in weather_icons[key] %}
+        <li class="weather-icon-item {{ icon }}"></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    </div>
+</div>
+</div>
+
+{% endfor %}
+</div>
+
+{% endblock %}

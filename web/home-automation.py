@@ -32,6 +32,12 @@ def metoffice_config():
     metoffice_locations = metoffice.get_observation_locations()
     return render_template('metoffice/config.html', metoffice_key = metoffice_key, metoffice_location = metoffice_location, metoffice_locations = metoffice_locations)
 
+@app.route('/metoffice/test')
+def metoffice_test():
+    weather_types = MetOffice.weather_types
+    weather_icons = ForecastFont.metoffice_icons
+    return render_template('metoffice/test.html', weather_types = weather_types, weather_icons = weather_icons)
+
 @app.route('/rooms/config', methods = ['GET', 'POST'])
 def rooms_config():
     '''Configure the relationship between the hue groups and rooms'''
@@ -102,7 +108,8 @@ def dashboard():
     weather_location = weather['SiteRep']['DV']['Location']['name']
     weather_keys = weather['SiteRep']['Wx']['Param']
     weather_data = get_latest_weather(weather)
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather_types = weather_types, weather_location = weather_location, weather_keys = weather_keys, weather_data = weather_data)
+    weather_icons = ForecastFont.metoffice_icons
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather_types = weather_types, weather_location = weather_location, weather_keys = weather_keys, weather_data = weather_data, weather_icons = weather_icons)
 
 def get_latest_weather(data):
     now = datetime.now()
@@ -132,6 +139,42 @@ class VCGenCmd(object):
     def measure_temp(self):
         '''call the measure_temp command on vcgencmd'''
         return self.get_raw('measure_temp')[5:9]
+
+class ForecastFont(object):
+
+    metoffice_icons = {
+        '0': ['icon-moon'],
+        '1': ['icon-sun'],
+        '2': ['basecloud', 'icon-night'],
+        '3': ['basecloud', 'icon-sunny'],
+
+        '5': ['icon-mist'],
+        '6': ['icon-mist'],
+        '7': ['icon-cloud'],
+        '8': ['icon-overcast'],
+        '9': ['basecloud', 'icon-showers', 'icon-night'],
+        '10': ['basecloud', 'icon-showers', 'icon-sunny'],
+        '11': ['basecloud', 'icon-drizzle'],
+        '12': ['basecloud', 'icon-showers'],
+        '13': ['basecloud', 'icon-rainy', 'icon-night'],
+        '14': ['basecloud', 'icon-rainy', 'icon-sunny'],
+        '15': ['basecloud', 'icon-rainy'],
+        '16': ['basecloud', 'icon-sleet', 'icon-night'],
+        '17': ['basecloud', 'icon-sleet', 'icon-sunny'],
+        '18': ['basecloud', 'icon-sleet'],
+        '19': ['basecloud', 'icon-hail', 'icon-night'],
+        '20': ['basecloud', 'icon-hail', 'icon-sunny'],
+        '21': ['basecloud', 'icon-hail'],
+        '22': ['basecloud', 'icon-snowy', 'icon-night'],
+        '23': ['basecloud', 'icon-snowy', 'icon-sunny'],
+        '24': ['basecloud', 'icon-snowy'],
+        '25': ['basecloud', 'icon-snowy', 'icon-night'],
+        '26': ['basecloud', 'icon-snowy', 'icon-sunny'],
+        '27': ['basecloud', 'icon-snowy'],
+        '28': ['basethundercloud', 'icon-thunder', 'icon-night'],
+        '29': ['basethundercloud', 'icon-thunder', 'icon-sunny'],
+        '30': ['basethundercloud', 'icon-thunder'],
+    }
 
 class DataStore(object):
 
