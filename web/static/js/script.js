@@ -9,20 +9,20 @@ function switchLight(hue_id) {
             state: checked
         }),
         success: function(result, status, jqXHR) {
-            appendAlert('success', 'light switched');
+            appendAlert('light switched', true);
         },
         error: function(jqXHR, status, error) {
-            appendAlert('danger', error);
+            appendAlert(error, false);
         }
     });
 }
 
-function appendAlert(type, message) {
+function appendAlert(message, success) {
     var date = new Date();
     jQuery('.toast-container').append(`
         <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" style="position: absolute; bottom: 10px; right:10px;">
             <div class="toast-header">
-                <img src="" class="` + type + ` rounded mr-2" alt="" style="width:18px; height:18px; background-color: darkgray">
+                <img src="" class="rounded mr-2" alt="" style="width:18px; height:18px; background-color: darkgray">
                 <strong class="mr-auto">home-automation</strong>
                 <small>` + date.getHours() + `:` + date.getMinutes() + `:` + date.getSeconds() + `</small>
                 <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
@@ -36,7 +36,7 @@ function appendAlert(type, message) {
     `);
     var toast = jQuery('.toast').toast({
         animation: true,
-        autohide: true,
+        autohide: success,
         delay: 1000
     })
     toast.on('hidden.bs.toast', function(){
