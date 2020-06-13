@@ -18,7 +18,7 @@
     <div class="col-4">
         <div class="card mb-3">
             <div class="card-header">
-                Weather
+                Weather {{ (weather_data['$']|int/60)|int }}:00
             </div>
             <div class="card-body">
                 MetOffice {{ weather_location }}
