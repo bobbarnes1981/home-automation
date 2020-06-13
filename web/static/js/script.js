@@ -18,12 +18,29 @@ function switchLight(hue_id) {
 }
 
 function appendAlert(type, message) {
-    jQuery('#alert-container').append(`
-        <div class="alert alert-` + type + ` alert-dismissable fade show" role="alert">
-            `+ message +`
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <spane aria-hidden="true">&times;</span>
-            </button>
-        </div>
+    var date = new Date();
+    jQuery('.main-content').append(`
+        <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" style="position: absolute; bottom: 10px; right:10px;">
+            <div class="toast-header">
+                <img src="" class="` + type + ` rounded mr-2" alt="" style="width:18px; height:18px; background-color: darkgray">
+                <strong class="mr-auto">home-automation</strong>
+                <small>` + date.getHours() + `:` + date.getMinutes() + `:` + date.getSeconds() + `</small>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="toast-body">
+                ` + message + `
+            </div>
+        </div> 
     `);
+    var toast = jQuery('.toast').toast({
+        animation: true,
+        autohide: false,
+        delay: 1000
+    })
+    toast.on('hidden.bs.toast', function(){
+        jQuery(this).remove();
+    });
+    toast.toast('show');
 }
