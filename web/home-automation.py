@@ -427,7 +427,7 @@ class MetOffice(object):
         '0': 'Clear night',
         '1': 'Sunny day',
         '2': 'Partly cloudy (night)',
-        '3': 'Partly cloud (day)',
+        '3': 'Partly cloudy (day)',
         '4': 'Not used',
         '5': 'Mist',
         '6': 'Fog',
