@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block title %}room edit{% endblock %}
+
+{% block content %}
+<h1>{{ room['name'] }} edit</h1>
+
+<form action="" method="POST">
+	<label for="name">Room</label>
+	<input id="name" type="text" name="name" value="{{ room['name'] }}" />
+	</br>
+
+	<label for="hue-group-id">Hue Group</label>
+	<select id="hue-group-id" name="hue_group_id">
+	
+		{% for key in hue_groups %}
+
+		<option value="{{ key }}" {% if key|int == room['hue_group_id'] %}selected="selected"{% endif %}>{{ hue_groups[key]['name'] }}</option>
+
+		{% endfor %}
+
+	</select>
+	</br>
+
+	<input type="submit" value="Update" />
+</form>
+{% endblock %}

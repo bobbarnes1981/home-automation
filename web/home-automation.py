@@ -62,6 +62,16 @@ def rooms_one(room_id):
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
 
+@app.route('/rooms/<int:room_id>/edit', methods = ['GET', 'POST'])
+def rooms_edit(room_id):
+    '''Edit one room'''
+    if request.method == 'POST':
+        store.update_room(room_id, request.form['name'], request.form['hue_group'])
+    room = store.get_room(room_id)
+    hue_groups = hue.get_groups()
+    hue_groups[0] = {'name': ''}
+    return render_template('rooms/edit.html', room = room, hue_groups = hue_groups)
+
 @app.route('/rooms', methods = ['GET', 'POST'])
 def rooms_all():
     '''List all rooms and allow adding a new room'''
