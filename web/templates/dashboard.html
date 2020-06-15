@@ -115,9 +115,9 @@
                 Disk
             </div>
             <div class="card-body">
-               {{ disk_total / 1024 / 1024 / 1024 }} GB total<br/>
-               {{ disk_free / 1024 / 1024 / 1024 }} GB free<br/>
-               {{ disk_used / 1024 / 1024 / 1024 }} GB used<br/>
+               {{ (disk_total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
+               {{ (disk_free / 1024 / 1024 / 1024)|round(2) }} GB free<br/>
+               {{ (disk_used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
             </div>
         </div>
     </div>
@@ -137,9 +137,9 @@
                 Memory
             </div>
             <div class="card-body">
-               {{ mem_total / 1024 / 1024 / 1024 }} GB total<br/>
-               {{ mem_avail / 1024 / 1024 / 1024 }} GB available<br/>
-               {{ mem_used / 1024 / 1024 / 1024 }} GB used<br/>
+               {{ (mem_total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
+               {{ (mem_avail / 1024 / 1024 / 1024)|round(2) }} GB available<br/>
+               {{ (mem_used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
             </div>
         </div>
     </div>
