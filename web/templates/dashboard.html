@@ -104,6 +104,8 @@
             <div class="card-body">
                 {{ db_file_name }} <br/>
                 {{ db_file_size / 1024 }} KB<br/>
+                From: {{ db_minmax['min'] }}<br/>
+                To: {{ db_minmax['max'] }}<br/>
             </div>
         </div>
     </div>

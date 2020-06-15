@@ -99,6 +99,11 @@ def dashboard():
         room_temps[room['id']] = temps
         room_lights[room['id']] = hue.get_lights_in_group(room['hue_group_id'])
     db_file_size = os.stat(DataStore.database).st_size
+    (db_min, db_max) = store.get_minmax_dates()
+    db_minmax = {
+        'min': datetime.fromtimestamp(db_min),
+        'max': datetime.fromtimestamp(db_max)
+    }
     cpu_perc = psutil.cpu_percent()
     cpu_temp = vcgc.measure_temp()
     root_data = psutil.disk_usage('/')
@@ -109,7 +114,7 @@ def dashboard():
     weather_keys = weather['SiteRep']['Wx']['Param']
     weather_data = get_latest_weather(weather)
     weather_icons = ForecastFont.metoffice_icons
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather_types = weather_types, weather_location = weather_location, weather_keys = weather_keys, weather_data = weather_data, weather_icons = weather_icons)
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather_types = weather_types, weather_location = weather_location, weather_keys = weather_keys, weather_data = weather_data, weather_icons = weather_icons, db_minmax = db_minmax)
 
 def get_latest_weather(data):
     now = datetime.now()
@@ -355,6 +360,19 @@ class DataStore(object):
         if val:
             return val
         return None
+
+    def get_minmax_dates(self):
+        '''Get the minimum and maximum dates in the data store'''
+        cxn = self.connect(None)
+        cur = cxn.cursor();
+
+        cur.execute('''
+            SELECT MIN(timestamp) AS min, MAX(timestamp) AS max FROM datastore;
+        ''')
+
+        val = cur.fetchone()
+
+        return val
 
 class Hue(object):
 
