@@ -1,0 +1,29 @@
+<div class="card-body">
+    <canvas id="memory-chart" width="" height=""></canvas>
+</div>
+<script>
+var m_ctx = document.getElementById('memory-chart').getContext('2d');
+var m_chart = new Chart(m_ctx, {
+    type: 'pie',
+    data: {
+        datasets: [{
+            data: [
+                {{ system['mem_data'].used / system['mem_data'].total }},
+                {{ system['mem_data'].available / system['mem_data'].total }}
+            ],
+            backgroundColor: [
+                'red',
+                'green'
+            ],
+            label: '/'
+        }],
+        labels: [
+            'Used',
+            'Free'
+        ]
+    },
+    options: {
+        responsive: true
+    }
+});
+</script>

@@ -1,0 +1,29 @@
+<div class="card-body">
+    <canvas id="disk-chart" width="" height=""></canvas>
+</div>
+<script>
+var d_ctx = document.getElementById('disk-chart').getContext('2d');
+var d_chart = new Chart(d_ctx, {
+    type: 'pie',
+    data: {
+        datasets: [{
+            data: [
+                {{ system['root_data'].used / system['root_data'].total }},
+                {{ system['root_data'].free / system['root_data'].total }}
+            ],
+            backgroundColor: [
+                'red',
+                'green'
+            ],
+            label: '/'
+        }],
+        labels: [
+            'Used',
+            'Free'
+        ]
+    },
+    options: {
+        responsive: true
+    }
+});
+</script>

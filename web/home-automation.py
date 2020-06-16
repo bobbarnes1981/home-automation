@@ -92,7 +92,63 @@ def dashboard():
     database = plugins['datastore'].get_dashboard_data()
     system = plugins['system'].get_dashboard_data()
     weather = plugins['metoffice'].get_dashboard_data()
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, database = database, system = system, weather = weather)
+    rows = [
+        {
+            'name': '',
+            'cards': [
+                {
+                    'name': 'Temperature',
+                    'width': '8',
+                    'template': 'temperature/graph.html'
+                },
+                {
+                    'name': 'Weather {0}:00'.format(int(weather['data']['$'])/60),
+                    'width': '4',
+                    'template': 'weather/card.html'
+                } 
+            ]
+        },
+        {
+            'name': 'Rooms',
+            'template': 'rooms/card.html'
+        },
+        {
+            'name': 'System',
+            'cards': [
+                {
+                    'name': 'Database',
+                    'width': '6',
+                    'template': 'database/card.html'
+                },
+                {
+                    'name': 'Disk',
+                    'width': '3',
+                    'template': 'system/card_disk.html'
+                },
+                {
+                    'name': 'Disk',
+                    'width': '3',
+                    'template': 'system/card_disk_pie.html'
+                },
+                {
+                    'name': 'Memory',
+                    'width': '3',
+                    'template': 'system/card_memory.html'
+                },
+                {
+                    'name': 'Memory',
+                    'width': '3',
+                    'template': 'system/card_memory_pie.html'
+                },
+                {
+                    'name': 'CPU',
+                    'width': '3',
+                    'template': 'system/card_cpu.html'
+                },
+            ]
+        }
+    ]
+    return render_template('dashboard.html', rows = rows, rooms = rooms, room_temps = room_temps, room_lights = room_lights, database = database, system = system, weather = weather)
 
 store = DataStoreSqLite()
 

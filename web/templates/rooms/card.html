@@ -1,0 +1,26 @@
+{% for room in rooms %}
+<div class="col-3">
+    <div class="card mb-3">
+        <div class="card-header">{{ room['name'] }}</div>
+        <div class="card-body">
+            {% if room_temps[room['id']] %}
+            {% set last_temp = room_temps[room['id']]|last %}
+            <p class="card-text">{{ last_temp['data_val'] }}c</p>
+            {% else %}
+            <p class="card-text">No temperature data</p>
+            {% endif %}
+        </div>
+        <ul class="list-group list-group-flush">
+         {% for light_id in room_lights[room['id']] %}
+            <li class="list-group-item">
+                {{ room_lights[room['id']][light_id]['name'] }}
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="switch_{{ light_id }}" onchange="switchLight({{ light_id }})" {% if room_lights[room['id']][light_id]['state']['on'] %}checked="checked"{% endif %} />
+                    <label class="custom-control-label" for="switch_{{ light_id }}">Switch</label>
+                </div>
+            </li>
+         {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endfor %}

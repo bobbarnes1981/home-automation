@@ -1,0 +1,64 @@
+<div class="card-body">
+    <canvas id="temperature-chart" width="" height=""></canvas>
+</div>
+<script>
+var colours = [
+	'red',
+	'orange',
+	'yellow',
+	'green',
+	'blue',
+	'indigo',
+	'violet'
+];
+var colour_choice = 0;
+function get_colour(){
+	return colours[colour_choice++];
+}
+
+var tc_ctx = document.getElementById('temperature-chart').getContext('2d');
+var tc_chart = new Chart(tc_ctx, {
+    type: 'line',
+    data: {
+        datasets: [
+			{% for room in rooms %}
+				{% if room_temps[room['id']] %}
+		    {
+			    label: '{{ room['name'] }}',
+            	data: [
+				{% for room_temp in room_temps[room['id']] %}
+			        {
+                        t: {{ room_temp['timestamp']*1000 }},
+                        y: {{ room_temp['data_val'] }}
+                    },
+				{% endfor %}
+		        ],
+			    fill: false,
+			    borderColor: get_colour(),
+        	},
+				{% endif %}
+			{% endfor %}
+	    ]
+    },
+    options: {
+        scales: {
+            xAxes: [{
+                type: 'time',
+                distribution: 'series',
+                time: {
+                    unit: 'minute',
+                    displayFormats: {
+                        minute: 'HH:mm',
+                        second: 'HH:mm:ss',
+                    },
+                    tooltipFormat: 'YYYY-MM-DD HH:mm:ss',
+                },
+                ticks: {
+                    source: 'auto',
+                    autoSkip: true,
+                },
+            }]
+        }
+    }
+});
+</script>
