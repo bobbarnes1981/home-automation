@@ -37,9 +37,8 @@ def metoffice_test():
 def rooms_one(room_id):
     '''Show one room'''
     room = store.get_room(room_id)
-    hue_group = hue.get_group(room['hue_group_id'])
-    lights = hue.get_lights_in_group(room['hue_group_id'])
-    temperature = plugins['temperature'].get_room_data(room['id'])
+    lights = plugins['hue'].get_room_data(room)
+    temperature = plugins['temperature'].get_room_data(room)
     if temperature:
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
@@ -88,8 +87,8 @@ def dashboard():
     room_temps = {}
     room_lights = {}
     for room in rooms:
-        room_temps[room['id']] = plugins['temperature'].get_dashboard_data(room)
-        room_lights[room['id']] = plugins['hue'].get_dashboard_data(room)
+        room_temps[room['id']] = plugins['temperature'].get_dashboard_room_data(room)
+        room_lights[room['id']] = plugins['hue'].get_dashboard_room_data(room)
     database = plugins['datastore'].get_dashboard_data()
     system = plugins['system'].get_dashboard_data()
     weather = plugins['metoffice'].get_dashboard_data()

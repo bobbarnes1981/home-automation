@@ -6,7 +6,11 @@ class PluginHue(object):
         self.store = store
         self.api = ApiHue(store)
 
-    def get_dashboard_data(self, room):
+    def get_room_data(self, room):
+        hue_group = self.api.get_group(room['hue_group_id'])
+        return self.api.get_lights_in_group(room['hue_group_id'])
+
+    def get_dashboard_room_data(self, room):
         return self.api.get_lights_in_group(room['hue_group_id'])
 
     def config(self, request):
