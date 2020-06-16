@@ -29,7 +29,7 @@ def metoffice_config():
         store.set_config('metoffice_location', request.form['metoffice_location'])
     metoffice_key = store.get_config('metoffice_key')
     metoffice_location = store.get_config('metoffice_location')
-    metoffice_locations = metoffice.get_observation_locations()
+    metoffice_locations = plugin_metoffice.get_observation_locations()
     return render_template('metoffice/config.html', metoffice_key = metoffice_key, metoffice_location = metoffice_location, metoffice_locations = metoffice_locations)
 
 @app.route('/metoffice/test')
@@ -109,33 +109,10 @@ def dashboard():
         temps = store.get_many_data(room['id'], 'temperature_c', time.time() - (60*60*24))
         room_temps[room['id']] = temps
         room_lights[room['id']] = hue.get_lights_in_group(room['hue_group_id'])
-    db_file_size = os.stat(DataStore.database).st_size
-    (db_min, db_max) = store.get_minmax_dates()
-    db_minmax = {
-        'min': datetime.fromtimestamp(db_min),
-        'max': datetime.fromtimestamp(db_max)
-    }
-    cpu_perc = psutil.cpu_percent()
-    cpu_temp = vcgc.measure_temp()
-    root_data = psutil.disk_usage('/')
-    mem_data = psutil.virtual_memory()
-    weather = metoffice.get_observation(store.get_config('metoffice_location'))
-    weather_types = MetOffice.weather_types
-    weather_location = weather['SiteRep']['DV']['Location']['name']
-    weather_keys = weather['SiteRep']['Wx']['Param']
-    weather_data = get_latest_weather(weather)
-    weather_icons = ForecastFont.metoffice_icons
-    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, db_file_name = DataStore.database, db_file_size = db_file_size, disk_total = root_data.total, disk_used = root_data.used, disk_free = root_data.free, mem_total = mem_data.total, mem_used = mem_data.used, mem_avail = mem_data.available, cpu_perc = cpu_perc, cpu_temp = cpu_temp, weather_types = weather_types, weather_location = weather_location, weather_keys = weather_keys, weather_data = weather_data, weather_icons = weather_icons, db_minmax = db_minmax)
-
-def get_latest_weather(data):
-    now = datetime.now()
-    today = now.strftime('%Y-%m-%dZ')
-    minutes = now.hour * 60
-    for period in data['SiteRep']['DV']['Location']['Period']:
-        if period['value'] == datetime.now().strftime('%Y-%m-%dZ'):
-            rep = period['Rep'][-1]
-            return rep
-    return []
+    database = plugin_datastore.get_data()
+    system = plugin_system.get_data()
+    weather = plugin_metoffice.get_observation_data(store.get_config('metoffice_location'))
+    return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, database = database, system = system, weather = weather)
 
 def dictionary_factory(cursor, row):
     '''Load the sqlite row into a dictionary'''
@@ -192,7 +169,7 @@ class ForecastFont(object):
         '30': ['basethundercloud', 'icon-thunder'],
     }
 
-class DataStore(object):
+class DataStoreSqLite(object):
 
     database = 'database.db'
 
@@ -446,6 +423,63 @@ class Hue(object):
         '''Set the state of the specified light'''
         return self.request_put('lights/{0}/state'.format(light_id), {"on": state})
 
+class PluginDataStore(object):
+
+    def __init__(self, store):
+        self.store = store
+
+    def get_data(self):
+        data = {}
+        data['file_name'] = self.store.database
+        data['file_size'] = os.stat(self.store.database).st_size
+        (db_min, db_max) = self.store.get_minmax_dates()
+        data['minmax'] = {
+            'min': datetime.fromtimestamp(db_min),
+            'max': datetime.fromtimestamp(db_max)
+        }
+        return data
+
+class PluginSystem(object):
+
+    def __init__(self, vcgencmd):
+        self.vcgencmd = vcgencmd
+
+    def get_data(self):
+        data = {}
+        data['cpu_perc'] = psutil.cpu_percent()
+        data['cpu_temp'] = self.vcgencmd.measure_temp()
+        data['root_data'] = psutil.disk_usage('/')
+        data['mem_data'] = psutil.virtual_memory()
+        return data
+
+class PluginMetOffice(object):
+
+    def __init__(self, api):
+        self.api = api
+
+    def get_latest_weather(self, data):
+        now = datetime.now()
+        today = now.strftime('%Y-%m-%dZ')
+        minutes = now.hour * 60
+        for period in data['SiteRep']['DV']['Location']['Period']:
+            if period['value'] == datetime.now().strftime('%Y-%m-%dZ'):
+                rep = period['Rep'][-1]
+                return rep
+        return []
+
+    def get_observation_locations(self):
+        return self.api.get_observation_locations()
+
+    def get_observation_data(self, location_id):
+        data = {}
+        weather = self.api.get_observation(store.get_config('metoffice_location'))
+        data['types'] = MetOffice.weather_types
+        data['location'] = weather['SiteRep']['DV']['Location']['name']
+        data['keys'] = weather['SiteRep']['Wx']['Param']
+        data['data'] = self.get_latest_weather(weather)
+        data['icons'] = ForecastFont.metoffice_icons
+        return data
+
 class MetOffice(object):
 
     base_url = 'datapoint.metoffice.gov.uk/public/data'
@@ -506,8 +540,9 @@ class MetOffice(object):
         '''Get the observations for the specified location'''
         return self.request_get('/val/wxobs/all/{0}/{1}'.format(self.datatype, id))
 
-store = DataStore()
+store = DataStoreSqLite()
 hue = Hue()
-metoffice = MetOffice()
-vcgc = VCGenCmd()
+plugin_metoffice = PluginMetOffice(MetOffice())
+plugin_system = PluginSystem(VCGenCmd())
+plugin_datastore = PluginDataStore(store)
 

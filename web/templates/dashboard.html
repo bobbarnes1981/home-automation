@@ -18,28 +18,28 @@
     <div class="col-4">
         <div class="card mb-3">
             <div class="card-header">
-                Weather {{ (weather_data['$']|int/60)|int }}:00
+                Weather {{ (weather['data']['$']|int/60)|int }}:00
             </div>
             <div class="card-body">
-                MetOffice {{ weather_location }}
+                MetOffice {{ weather['location'] }}
             </div>
             <ul class="list-group list-group-flush">
-                {% for p in weather_keys %}
-                    {% if weather_data[p['name']] %}
+                {% for p in weather['keys'] %}
+                    {% if weather['data'][p['name']] %}
 	            <li class="list-group-item py-1">
                         {{ p['$'] }}
                         {% if p['name'] == 'W' %}
-                            {{ weather_types[weather_data[p['name']]] }}
+                            {{ weather['types'][weather['data'][p['name']]] }}
 
-                            {% if weather_icons[weather_data[p['name']]] %}
+                            {% if weather['icons'][weather['data'][p['name']]] %}
                     <ul class="weather-icon-list">
-                                {% for icon in weather_icons[weather_data[p['name']]] %}
+                                {% for icon in weather['icons'][weather['data'][p['name']]] %}
                         <li class="weather-icon-item {{ icon }}"></li>
                                 {% endfor %}
                     </ul>
                             {% endif %}
                         {% else %}
-                            {{ weather_data[p['name']] }}
+                            {{ weather['data'][p['name']] }}
                         {% endif %}
                         {{ p['units'] }}
                 </li>
@@ -102,10 +102,10 @@
                 Database
             </div>
             <div class="card-body">
-                {{ db_file_name }} <br/>
-                {{ db_file_size / 1024 }} KB<br/>
-                From: {{ db_minmax['min'] }}<br/>
-                To: {{ db_minmax['max'] }}<br/>
+                {{ database['file_name'] }} <br/>
+                {{ database['file_size'] / 1024 }} KB<br/>
+                From: {{ database['minmax']['min'] }}<br/>
+                To: {{ database['minmax']['max'] }}<br/>
             </div>
         </div>
     </div>
@@ -115,9 +115,9 @@
                 Disk
             </div>
             <div class="card-body">
-               {{ (disk_total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
-               {{ (disk_free / 1024 / 1024 / 1024)|round(2) }} GB free<br/>
-               {{ (disk_used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
+               {{ (system['root_data'].total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
+               {{ (system['root_data'].free / 1024 / 1024 / 1024)|round(2) }} GB free<br/>
+               {{ (system['root_data'].used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
             </div>
         </div>
     </div>
@@ -137,9 +137,9 @@
                 Memory
             </div>
             <div class="card-body">
-               {{ (mem_total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
-               {{ (mem_avail / 1024 / 1024 / 1024)|round(2) }} GB available<br/>
-               {{ (mem_used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
+               {{ (system['mem_data'].total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
+               {{ (system['mem_data'].available / 1024 / 1024 / 1024)|round(2) }} GB available<br/>
+               {{ (system['mem_data'].used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
             </div>
         </div>
     </div>
@@ -159,8 +159,8 @@
                 CPU
             </div>
             <div class="card-body">
-                {{ cpu_perc }}%<br/>
-                {{ cpu_temp }}c
+                {{ system['cpu_perc'] }}%<br/>
+                {{ system['cpu_temp'] }}c
             </div>
         </div>
     </div>
@@ -187,8 +187,8 @@ var d_chart = new Chart(d_ctx, {
     data: {
         datasets: [{
             data: [
-                {{ disk_used / disk_total }},
-                {{ disk_free / disk_total }}
+                {{ system['root_data'].used / system['root_data'].total }},
+                {{ system['root_data'].free / system['root_data'].total }}
             ],
             backgroundColor: [
                 'red',
@@ -212,8 +212,8 @@ var m_chart = new Chart(m_ctx, {
     data: {
         datasets: [{
             data: [
-                {{ mem_used / mem_total }},
-                {{ mem_avail / mem_total }}
+                {{ system['mem_data'].used / system['mem_data'].total }},
+                {{ system['mem_data'].available / system['mem_data'].total }}
             ],
             backgroundColor: [
                 'red',
