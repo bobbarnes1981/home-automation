@@ -57,7 +57,7 @@ def rooms_one(room_id):
     room = store.get_room(room_id)
     hue_group = hue.get_group(room['hue_group_id'])
     lights = hue.get_lights_in_group(room['hue_group_id'])
-    temperature = store.get_one_data(room_id, 'temperature_c')
+    temperature = plugin_temperature.get_room_data(room['id'])
     if temperature:
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
@@ -106,12 +106,11 @@ def dashboard():
     room_temps = {}
     room_lights = {}
     for room in rooms:
-        temps = store.get_many_data(room['id'], 'temperature_c', time.time() - (60*60*24))
-        room_temps[room['id']] = temps
-        room_lights[room['id']] = hue.get_lights_in_group(room['hue_group_id'])
-    database = plugin_datastore.get_data()
-    system = plugin_system.get_data()
-    weather = plugin_metoffice.get_observation_data(store.get_config('metoffice_location'))
+        room_temps[room['id']] = plugin_temperature.get_dashboard_data(room)
+        room_lights[room['id']] = plugin_hue.get_dashboard_data(room)
+    database = plugin_datastore.get_dashboard_data()
+    system = plugin_system.get_dashboard_data()
+    weather = plugin_metoffice.get_dashboard_data()
     return render_template('dashboard.html', rooms = rooms, room_temps = room_temps, room_lights = room_lights, database = database, system = system, weather = weather)
 
 def dictionary_factory(cursor, row):
@@ -174,7 +173,7 @@ class DataStoreSqLite(object):
     database = 'database.db'
 
     def __init__(self):
-        cxn = sqlite3.connect(self.database)
+        cxn = self.connect(None)
         cur = cxn.cursor()
 
         cur.execute('''
@@ -362,16 +361,16 @@ class DataStoreSqLite(object):
 
         return val
 
-class Hue(object):
+class ApiHue(object):
 
     DEVICE_TYPE = 'home-automation'
 
-    def __init__(self):
-        pass
+    def __init__(self, store):
+        self.store = store
 
     def url(self, path):
         '''Build the hue api url'''
-        return 'http://{0}/api/{1}/{2}'.format(store.get_config('hue_address'), store.get_config('hue_username'), path)
+        return 'http://{0}/api/{1}/{2}'.format(self.store.get_config('hue_address'), self.store.get_config('hue_username'), path)
 
     def request_get(self, path):
         '''Execute a get request and return the json'''
@@ -428,7 +427,7 @@ class PluginDataStore(object):
     def __init__(self, store):
         self.store = store
 
-    def get_data(self):
+    def get_dashboard_data(self):
         data = {}
         data['file_name'] = self.store.database
         data['file_size'] = os.stat(self.store.database).st_size
@@ -444,7 +443,7 @@ class PluginSystem(object):
     def __init__(self, vcgencmd):
         self.vcgencmd = vcgencmd
 
-    def get_data(self):
+    def get_dashboard_data(self):
         data = {}
         data['cpu_perc'] = psutil.cpu_percent()
         data['cpu_temp'] = self.vcgencmd.measure_temp()
@@ -454,7 +453,8 @@ class PluginSystem(object):
 
 class PluginMetOffice(object):
 
-    def __init__(self, api):
+    def __init__(self, store, api):
+        self.store = store
         self.api = api
 
     def get_latest_weather(self, data):
@@ -470,17 +470,36 @@ class PluginMetOffice(object):
     def get_observation_locations(self):
         return self.api.get_observation_locations()
 
-    def get_observation_data(self, location_id):
+    def get_dashboard_data(self):
         data = {}
-        weather = self.api.get_observation(store.get_config('metoffice_location'))
-        data['types'] = MetOffice.weather_types
+        weather = self.api.get_observation(self.store.get_config('metoffice_location'))
+        data['types'] = self.api.weather_types
         data['location'] = weather['SiteRep']['DV']['Location']['name']
         data['keys'] = weather['SiteRep']['Wx']['Param']
         data['data'] = self.get_latest_weather(weather)
         data['icons'] = ForecastFont.metoffice_icons
         return data
 
-class MetOffice(object):
+class PluginTemperature(object):
+
+    def __init__(self, store):
+        self.store = store
+
+    def get_room_data(self, room_id):
+        return self.store.get_one_data(room_id, 'temperature_c')
+
+    def get_dashboard_data(self, room):
+        return self.store.get_many_data(room['id'], 'temperature_c', time.time() - (60*60*24))
+
+class PluginHue(object):
+
+    def __init__(self, api):
+        self.api = api
+
+    def get_dashboard_data(self, room):
+        return hue.get_lights_in_group(room['hue_group_id'])
+
+class ApiMetOffice(object):
 
     base_url = 'datapoint.metoffice.gov.uk/public/data'
     datatype = 'json'
@@ -520,12 +539,12 @@ class MetOffice(object):
         '30': 'Thunder',
     }
 
-    def __init__(self):
-        pass
+    def __init__(self, store):
+        self.store = store
 
     def url(self, path):
         '''Build the met office data point url'''
-        return 'http://{0}/{1}?res=hourly&key={2}'.format(self.base_url, path, store.get_config('metoffice_key'))
+        return 'http://{0}/{1}?res=hourly&key={2}'.format(self.base_url, path, self.store.get_config('metoffice_key'))
 
     def request_get(self, path):
         '''Execute a get request and return the json'''
@@ -540,9 +559,13 @@ class MetOffice(object):
         '''Get the observations for the specified location'''
         return self.request_get('/val/wxobs/all/{0}/{1}'.format(self.datatype, id))
 
-store = DataStoreSqLite()
-hue = Hue()
-plugin_metoffice = PluginMetOffice(MetOffice())
 plugin_system = PluginSystem(VCGenCmd())
+
+store = DataStoreSqLite()
+hue = ApiHue(store)
+
 plugin_datastore = PluginDataStore(store)
+plugin_temperature = PluginTemperature(store)
+plugin_hue = PluginHue(hue)
+plugin_metoffice = PluginMetOffice(store, ApiMetOffice(store))
 
