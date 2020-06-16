@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block title %}config{% endblock %}
+
+{% block content %}
+<h1>config</h1>
+
+<ul class="nav nav-tabs">
+    {% for config in configs %}
+    <li class="nav-item">
+        <a class="{% if plugin_name == config %}active{% endif %} nav-link" href="{{ url_for('config', plugin_name = config) }}">{{ config }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% include tab_template %}
+
+{% endblock %}

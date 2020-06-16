@@ -29,16 +29,8 @@
 	                    <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Config
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="{{ url_for('hue_config') }}">Hue Config</a>
-                                <a class="dropdown-item" href="{{ url_for('metoffice_config') }}">MetOffice Config</a>
-                                <a class="dropdown-item" href="{{ url_for('rooms_config') }}">Rooms Config</a>
-
-                            </div>
+        	            <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('config', plugin_name = 'config') }}">Config</a>
                         </li>
         	            <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('rooms_all') }}">Rooms</a>
