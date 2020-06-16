@@ -66,7 +66,7 @@
             <div class="card-body">
                 {% if room_temps[room['id']] %}
                 {% set last_temp = room_temps[room['id']]|last %}
-                <p class="card-text">{{ last_temp['temperature'] }}c</p>
+                <p class="card-text">{{ last_temp['data_val'] }}c</p>
                 {% else %}
                 <p class="card-text">No temperature data</p>
                 {% endif %}
@@ -244,7 +244,7 @@ var tc_chart = new Chart(tc_ctx, {
 				{% for room_temp in room_temps[room['id']] %}
 			        {
                         t: {{ room_temp['timestamp']*1000 }},
-                        y: {{ room_temp['temperature'] }}
+                        y: {{ room_temp['data_val'] }}
                     },
 				{% endfor %}
 		        ],

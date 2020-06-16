@@ -57,7 +57,7 @@ def rooms_one(room_id):
     room = store.get_room(room_id)
     hue_group = hue.get_group(room['hue_group_id'])
     lights = hue.get_lights_in_group(room['hue_group_id'])
-    temperature = store.get_temperature(room_id)
+    temperature = store.get_one_data(room_id, 'temperature_c')
     if temperature:
         temperature['date'] = datetime.fromtimestamp(temperature['timestamp'])
     return render_template('rooms/one.html', room = room, lights = lights, temperature = temperature)
@@ -80,13 +80,14 @@ def rooms_all():
     rooms = store.get_rooms()
     return render_template('rooms/all.html', rooms = rooms)
 
-@app.route('/api/rooms/<int:room_id>/temperature', methods = [ 'POST' ])
-def api_rooms_temperature(room_id):
-    '''Append a new temperature reading for the room'''
+@app.route('/api/rooms/<int:room_id>/data', methods = [ 'POST' ])
+def api_rooms_data(room_id):
+    '''Append a new data for the room'''
     # TODO: validate room id
     if request.method == 'POST':
         data = request.get_json()
-        store.set_temperature(room_id, data['temperature_c'])
+        for k in data.keys():
+            store.set_data(room_id, k, data[k])
         return jsonify('success')
 
 @app.route('/api/lights/<int:light_id>', methods = [ 'PUT' ])
@@ -105,7 +106,7 @@ def dashboard():
     room_temps = {}
     room_lights = {}
     for room in rooms:
-        temps = store.get_temperatures(room['id'], time.time() - (60*60*24))
+        temps = store.get_many_data(room['id'], 'temperature_c', time.time() - (60*60*24))
         room_temps[room['id']] = temps
         room_lights[room['id']] = hue.get_lights_in_group(room['hue_group_id'])
     db_file_size = os.stat(DataStore.database).st_size
@@ -325,8 +326,8 @@ class DataStore(object):
         cxn.commit()
         cxn.close()
 
-    def set_temperature(self, room_id, temperature):
-        '''Append a new temperature reading for the room with the current timestamp'''
+    def set_data(self, room_id, data_key, data_val):
+        '''Append a new data reading for the room with the current timestamp'''
         cxn = self.connect(None)
         cur = cxn.cursor()
 
@@ -334,21 +335,21 @@ class DataStore(object):
             INSERT INTO datastore (
                 timestamp, room_id, data_key, data_val
             ) VALUES (
-                :timestamp, :room_id, :data_key, :temperature
+                :timestamp, :room_id, :data_key, :data_val
             );
-        ''', {"timestamp": time.time(), "room_id": room_id, "data_key": 'temperature_c', "temperature": temperature})
+        ''', {"timestamp": time.time(), "room_id": room_id, "data_key": data_key, "data_val": data_val})
 
         cxn.commit()
         cxn.close()
 
-    def get_temperature(self, room_id):
-        '''Get the last temperature for the room'''
+    def get_one_data(self, room_id, data_key):
+        '''Get the last data for the room'''
         cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
         cur.execute('''
-            SELECT data_val AS temperature, timestamp FROM datastore WHERE room_id = :room_id AND data_key = :data_key ORDER BY timestamp DESC LIMIT 1;
-        ''', {"room_id": room_id, "data_key": 'temperature_c'})
+            SELECT data_val, timestamp FROM datastore WHERE room_id = :room_id AND data_key = :data_key ORDER BY timestamp DESC LIMIT 1;
+        ''', {"room_id": room_id, "data_key": data_key})
 
         val = cur.fetchone()
 
@@ -356,14 +357,14 @@ class DataStore(object):
             return val
         return None
 
-    def get_temperatures(self, room_id, from_timestamp):
-        '''Get the temperatures for the reoom between now and from_timestamp'''
+    def get_many_data(self, room_id, data_key, from_timestamp):
+        '''Get the data for the reoom between now and from_timestamp'''
         cxn = self.connect(dictionary_factory)
         cur = cxn.cursor()
 
         cur.execute('''
-            SELECT data_val AS temperature, timestamp FROM datastore WHERE room_id = :room_id AND data_key = :data_key AND timestamp > :timestamp ORDER BY timestamp;
-        ''', {"room_id": room_id, "data_key": 'temperature_c', "timestamp": from_timestamp})
+            SELECT data_val, timestamp FROM datastore WHERE room_id = :room_id AND data_key = :data_key AND timestamp > :timestamp ORDER BY timestamp;
+        ''', {"room_id": room_id, "data_key": data_key, "timestamp": from_timestamp})
 
         val = cur.fetchmany(1440)
 
