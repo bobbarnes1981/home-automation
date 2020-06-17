@@ -8,8 +8,8 @@ var d_chart = new Chart(d_ctx, {
     data: {
         datasets: [{
             data: [
-                {{ system['root_data'].used / system['root_data'].total }},
-                {{ system['root_data'].free / system['root_data'].total }}
+                {{ data['system']['root_data'].used / data['system']['root_data'].total }},
+                {{ data['system']['root_data'].free / data['system']['root_data'].total }}
             ],
             backgroundColor: [
                 'red',

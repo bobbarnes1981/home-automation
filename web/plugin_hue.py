@@ -13,6 +13,9 @@ class PluginHue(object):
     def get_dashboard_room_data(self, room):
         return self.api.get_lights_in_group(room['hue_group_id'])
 
+    def get_dashboard_data(self):
+        return None
+
     def config(self, request):
         if request.method == 'POST':
             self.store.set_config('hue_address', request.form['hue_address'])

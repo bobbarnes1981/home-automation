@@ -6,6 +6,9 @@ class PluginSystem(object):
     def __init__(self):
         self.vcgencmd = VCGenCmd()
 
+    def get_dashboard_room_data(self, room):
+        return None
+
     def get_dashboard_data(self):
         data = {}
         data['cpu_perc'] = psutil.cpu_percent()
@@ -13,6 +16,12 @@ class PluginSystem(object):
         data['root_data'] = psutil.disk_usage('/')
         data['mem_data'] = psutil.virtual_memory()
         return data
+
+    def config(self, request):
+        if request.method == 'POST':
+            pass
+        tab_data = {}
+        return tab_data
 
 class VCGenCmd(object):
 

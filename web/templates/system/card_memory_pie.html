@@ -8,8 +8,8 @@ var m_chart = new Chart(m_ctx, {
     data: {
         datasets: [{
             data: [
-                {{ system['mem_data'].used / system['mem_data'].total }},
-                {{ system['mem_data'].available / system['mem_data'].total }}
+                {{ data['system']['mem_data'].used / data['system']['mem_data'].total }},
+                {{ data['system']['mem_data'].available / data['system']['mem_data'].total }}
             ],
             backgroundColor: [
                 'red',

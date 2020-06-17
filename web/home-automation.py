@@ -14,17 +14,10 @@ app = Flask(__name__)
 @app.route('/config/<string:plugin_name>', methods = ['GET', 'POST'])
 def config(plugin_name):
     configs = plugins.keys()
-    tab_template = 'blank.html'
-    tab_data = {}
-    if plugin_name == 'hue':
-        tab_template = 'hue/config.html'
-        tab_data = plugins['hue'].config(request)
-    if plugin_name == 'metoffice':
-        tab_template = 'metoffice/config.html'
-        tab_data = plugins['metoffice'].config(request)
-    if plugin_name == 'temperature':
-        tab_template = 'temperature/config.html'
-        tab_data = plugins['temperature'].config(request)
+    if plugin_name not in configs:
+        plugin_name = configs[0]
+    tab_template = '{0}/config.html'.format(plugin_name)
+    tab_data = plugins[plugin_name].config(request)
     return render_template('config.html', plugin_name = plugin_name, configs = configs, tab_template = tab_template, tab_data = tab_data)
 
 @app.route('/metoffice/test')
@@ -84,14 +77,13 @@ def api_lights(light_id):
 def dashboard():
     '''A collection of information'''
     rooms = store.get_rooms()
-    room_temps = {}
-    room_lights = {}
-    for room in rooms:
-        room_temps[room['id']] = plugins['temperature'].get_dashboard_room_data(room)
-        room_lights[room['id']] = plugins['hue'].get_dashboard_room_data(room)
-    database = plugins['datastore'].get_dashboard_data()
-    system = plugins['system'].get_dashboard_data()
-    weather = plugins['metoffice'].get_dashboard_data()
+    room_data = {}
+    data = {}
+    for plugin_name in plugins.keys():
+        room_data[plugin_name] = {}
+        for room in rooms:
+            room_data[plugin_name][room['id']] = plugins[plugin_name].get_dashboard_room_data(room)
+        data[plugin_name] = plugins[plugin_name].get_dashboard_data()
     rows = [
         {
             'name': '',
@@ -102,15 +94,15 @@ def dashboard():
                     'template': 'temperature/graph.html'
                 },
                 {
-                    'name': 'Weather {0}:00'.format(int(weather['data']['$'])/60),
+                    'name': 'Weather {0}:00'.format(int(data['metoffice']['data']['$'])/60),
                     'width': '4',
-                    'template': 'weather/card.html'
+                    'template': 'metoffice/card.html'
                 } 
             ]
         },
         {
             'name': 'Rooms',
-            'template': 'rooms/card.html'
+            'template': 'rooms/row.html'
         },
         {
             'name': 'System',
@@ -118,7 +110,7 @@ def dashboard():
                 {
                     'name': 'Database',
                     'width': '6',
-                    'template': 'database/card.html'
+                    'template': 'datastore/card.html'
                 },
                 {
                     'name': 'Disk',
@@ -148,7 +140,7 @@ def dashboard():
             ]
         }
     ]
-    return render_template('dashboard.html', rows = rows, rooms = rooms, room_temps = room_temps, room_lights = room_lights, database = database, system = system, weather = weather)
+    return render_template('dashboard.html', rows = rows, rooms = rooms, room_data = room_data, data = data)
 
 store = DataStoreSqLite()
 

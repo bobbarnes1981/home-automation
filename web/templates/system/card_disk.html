@@ -1,5 +1,5 @@
 <div class="card-body">
-    {{ (system['root_data'].total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
-    {{ (system['root_data'].free / 1024 / 1024 / 1024)|round(2) }} GB free<br/>
-    {{ (system['root_data'].used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
+    {{ (data['system']['root_data'].total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
+    {{ (data['system']['root_data'].free / 1024 / 1024 / 1024)|round(2) }} GB free<br/>
+    {{ (data['system']['root_data'].used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
 </div>

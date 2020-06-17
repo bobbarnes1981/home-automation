@@ -1,5 +1,5 @@
 <div class="card-body">
-    {{ (system['mem_data'].total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
-    {{ (system['mem_data'].available / 1024 / 1024 / 1024)|round(2) }} GB available<br/>
-    {{ (system['mem_data'].used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
+    {{ (data['system']['mem_data'].total / 1024 / 1024 / 1024)|round(2) }} GB total<br/>
+    {{ (data['system']['mem_data'].available / 1024 / 1024 / 1024)|round(2) }} GB available<br/>
+    {{ (data['system']['mem_data'].used / 1024 / 1024 / 1024)|round(2) }} GB used<br/>
 </div>

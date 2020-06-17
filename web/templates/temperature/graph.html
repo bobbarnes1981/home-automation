@@ -22,11 +22,11 @@ var tc_chart = new Chart(tc_ctx, {
     data: {
         datasets: [
 			{% for room in rooms %}
-				{% if room_temps[room['id']] %}
+				{% if room_data['temperature'][room['id']] %}
 		    {
 			    label: '{{ room['name'] }}',
             	data: [
-				{% for room_temp in room_temps[room['id']] %}
+				{% for room_temp in room_data['temperature'][room['id']] %}
 			        {
                         t: {{ room_temp['timestamp']*1000 }},
                         y: {{ room_temp['data_val'] }}

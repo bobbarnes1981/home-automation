@@ -8,6 +8,9 @@ class PluginDataStore(object):
     def __init__(self, store):
         self.store = store
 
+    def get_dashboard_room_data(self, room):
+        return None
+
     def get_dashboard_data(self):
         data = {}
         data['file_name'] = self.store.database
@@ -18,6 +21,12 @@ class PluginDataStore(object):
             'max': datetime.fromtimestamp(db_max)
         }
         return data
+
+    def config(self, request):
+        if request.method == 'POST':
+            pass
+        tab_data = {}
+        return tab_data
 
 class DataStoreSqLite(object):
 

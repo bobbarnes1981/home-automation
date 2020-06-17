@@ -1,0 +1,26 @@
+<div class="card-body">
+    MetOffice {{ data['metoffice']['location'] }}
+</div>
+<ul class="list-group list-group-flush">
+    {% for p in data['metoffice']['keys'] %}
+        {% if data['metoffice']['data'][p['name']] %}
+    <li class="list-group-item py-1">
+            {{ p['$'] }}
+            {% if p['name'] == 'W' %}
+                {{ data['metoffice']['types'][data['metoffice']['data'][p['name']]] }}
+
+                {% if data['metoffice']['icons'][data['metoffice']['data'][p['name']]] %}
+        <ul class="weather-icon-list">
+                    {% for icon in data['metoffice']['icons'][data['metoffice']['data'][p['name']]] %}
+            <li class="weather-icon-item {{ icon }}"></li>
+                    {% endfor %}
+        </ul>
+                {% endif %}
+            {% else %}
+                {{ data['metoffice']['data'][p['name']] }}
+            {% endif %}
+            {{ p['units'] }}
+    </li>
+        {% endif %}
+    {% endfor %}
+</ul>

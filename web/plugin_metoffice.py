@@ -20,6 +20,9 @@ class PluginMetOffice(object):
     def get_observation_locations(self):
         return self.api.get_observation_locations()
 
+    def get_dashboard_room_data(self, room):
+        return None
+
     def get_dashboard_data(self):
         data = {}
         weather = self.api.get_observation(self.store.get_config('metoffice_location'))
