@@ -3,4 +3,5 @@
     {{ data['datastore']['file_size'] / 1024 / 1024 }} MB<br/>
     From: {{ data['datastore']['minmax']['min'] }}<br/>
     To: {{ data['datastore']['minmax']['max'] }}<br/>
+    Average: {{ (data['datastore']['file_size'] / data['datastore']['days']) / 1024 }} KB / day<br/>
 </div>

@@ -20,6 +20,7 @@ class PluginDataStore(object):
             'min': datetime.fromtimestamp(db_min),
             'max': datetime.fromtimestamp(db_max)
         }
+        data['days'] = (db_max - db_min) / 60 / 60 / 24;
         return data
 
     def config(self, request):
