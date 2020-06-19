@@ -55,7 +55,9 @@ class Service(Thread):
                 print(response.text)
             except Exception, e:
                 print(e)
-            time.sleep(60.0 - ((time.time() - self.starttime) % 60.0))
+            delay = (60.0 - ((time.time() - self.starttime) % 60.0))
+            print('sleeping for: {0}'.format(delay))
+            time.sleep(delay)
 
 srv = Service(Sensor())
 #srv.daemon = True
